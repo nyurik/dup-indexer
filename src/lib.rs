@@ -114,24 +114,20 @@ mod tests {
 
     #[test]
     fn test_str() {
-        let mut store: DupIndexer<&str> = DupIndexer::default();
-        let foo_idx = store.insert("foo");
-        store.insert("bar");
-        let foo_idx2 = store.insert("foo");
-        assert_eq!(foo_idx, foo_idx2);
-        let keys = store.into_vec();
-        assert_eq!(keys, vec!["foo", "bar"]);
+        let mut di: DupIndexer<&str> = DupIndexer::default();
+        assert_eq!(0, di.insert("foo"));
+        assert_eq!(1, di.insert("bar"));
+        assert_eq!(0, di.insert("foo"));
+        assert_eq!(di.into_vec(), vec!["foo", "bar"]);
     }
 
     #[test]
     fn test_copyable_value() {
-        let mut store: DupIndexer<i32> = DupIndexer::default();
-        let foo_idx = store.insert(42);
-        store.insert(13);
-        let foo_idx2 = store.insert(42);
-        assert_eq!(foo_idx, foo_idx2);
-        let keys = store.into_vec();
-        assert_eq!(keys, vec![42, 13]);
+        let mut di: DupIndexer<i32> = DupIndexer::default();
+        assert_eq!(0, di.insert(42));
+        assert_eq!(1, di.insert(13));
+        assert_eq!(0, di.insert(42));
+        assert_eq!(di.into_vec(), vec![42, 13]);
     }
 
     #[test]
@@ -139,45 +135,37 @@ mod tests {
         #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
         struct Foo(pub i32);
 
-        let mut store: DupIndexer<Foo> = DupIndexer::new();
-        let foo_idx = store.insert(Foo(42));
-        store.insert(Foo(13));
-        let foo_idx2 = store.insert(Foo(42));
-        assert_eq!(foo_idx, foo_idx2);
-        let keys = store.into_vec();
-        assert_eq!(keys, vec![Foo(42), Foo(13)]);
+        let mut di: DupIndexer<Foo> = DupIndexer::new();
+        assert_eq!(0, di.insert(Foo(42)));
+        assert_eq!(1, di.insert(Foo(13)));
+        assert_eq!(0, di.insert(Foo(42)));
+        assert_eq!(di.into_vec(), vec![Foo(42), Foo(13)]);
     }
 
     #[test]
     fn test_string() {
-        let mut store: DupIndexer<String> = DupIndexer::default();
-        let foo_idx = store.insert_string("foo".to_string());
-        store.insert_string("bar".to_string());
-        let foo_idx2 = store.insert_string("foo".to_string());
-        assert_eq!(foo_idx, foo_idx2);
-        let keys = store.into_vec();
-        assert_eq!(keys, vec!["foo".to_string(), "bar".to_string()]);
+        let mut di: DupIndexer<String> = DupIndexer::default();
+        assert_eq!(0, di.insert_string("foo".to_string()));
+        assert_eq!(1, di.insert_string("bar".to_string()));
+        assert_eq!(0, di.insert_string("foo".to_string()));
+        assert_eq!(di.into_vec(), vec!["foo".to_string(), "bar".to_string()]);
     }
 
     #[test]
     fn test_vec() {
-        let mut store: DupIndexer<Vec<i32>> = DupIndexer::default();
-        let foo_idx = store.insert_vec(vec![1, 2, 3]);
-        store.insert_vec(vec![1, 2, 4]);
-        let foo_idx2 = store.insert_vec(vec![1, 2, 3]);
-        assert_eq!(foo_idx, foo_idx2);
-        let keys = store.into_vec();
-        assert_eq!(keys, vec![vec![1, 2, 3], vec![1, 2, 4]]);
+        let mut di: DupIndexer<Vec<i32>> = DupIndexer::default();
+        assert_eq!(0, di.insert_vec(vec![1, 2, 3]));
+        assert_eq!(1, di.insert_vec(vec![1, 2, 4]));
+        assert_eq!(0, di.insert_vec(vec![1, 2, 3]));
+        assert_eq!(di.into_vec(), vec![vec![1, 2, 3], vec![1, 2, 4]]);
     }
 
     #[test]
     fn test_box() {
-        let mut store: DupIndexer<Box<i32>> = DupIndexer::default();
-        let foo_idx = unsafe { store.insert_box(Box::new(42)) };
-        unsafe { store.insert_box(Box::new(13)) };
-        let foo_idx2 = unsafe { store.insert_box(Box::new(42)) };
-        assert_eq!(foo_idx, foo_idx2);
-        let keys = store.into_vec();
-        assert_eq!(keys, vec![Box::new(42), Box::new(13)]);
+        let mut di: DupIndexer<Box<i32>> = DupIndexer::default();
+        assert_eq!(0, unsafe { di.insert_box(Box::new(42)) });
+        unsafe { di.insert_box(Box::new(13)) };
+        assert_eq!(0, unsafe { di.insert_box(Box::new(42)) });
+        assert_eq!(di.into_vec(), vec![Box::new(42), Box::new(13)]);
     }
 }
