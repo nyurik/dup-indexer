@@ -31,7 +31,7 @@ fn main() {
 ```
 
 ## Implementation
-DupIndexer keeps inserted values in a vector in the order of insertion. It also tracks inserted values in a lookup `HashMap<&T, usize>` where `T` is the type of the inserted value. This means that the inserted values must implement `Hash` and `Eq`.
+DupIndexer keeps inserted values in a vector in the order of insertion. It also tracks inserted values in a lookup `HashMap<T, usize>` where `T` is the type of the inserted value. This means that the inserted values must implement `Hash` and `Eq`.
 
 The value types like ints, floats, bools, chars and any references like `&str` cause no issues because they can be copied to both the vector and the lookup map containers. However, the non-copyable types with memory allocation like `String` and `Vec` cannot be owned by both containers at the same time. To solve this, DupIndexer creates a shallow non-droppable copy of the value, and stores it in the hashmap, whereas the original value goes into the vector:
 
