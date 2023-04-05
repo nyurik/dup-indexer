@@ -1,0 +1,15 @@
+[package]
+name = "bench"
+description = "Benchmarks to run with `cargo bench`"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+dup-indexer = { path = ".." }
+
+[dev-dependencies]
+criterion = "0.4"
+
+[[bench]]
+name = "bench"
+harness = false

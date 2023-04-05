@@ -11,8 +11,7 @@ license = "MIT OR Apache-2.0"
 
 [dev-dependencies]
 cargo-husky = { version = "1", features = ["user-hooks"], default-features = false }
-criterion = "0.4"
 
-[[bench]]
-name = "bench"
-harness = false
+[workspace]
+# Use `cargo bench -p bench` to run the benchmarks.
+members = ["bench"]

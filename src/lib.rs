@@ -1,12 +1,15 @@
 #![doc = include_str!("../README.md")]
 
+use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::HashMap;
+use std::fmt::{Debug, Formatter};
 use std::hash::Hash;
 use std::mem::ManuallyDrop;
+use std::ptr;
 
 pub struct DupIndexer<T> {
     values: Vec<T>,
-    index: HashMap<ManuallyDrop<T>, usize>,
+    lookup: HashMap<ManuallyDrop<T>, usize>,
 }
 
 impl<T> DupIndexer<T> {
@@ -14,7 +17,7 @@ impl<T> DupIndexer<T> {
     pub fn new() -> Self {
         Self {
             values: Vec::new(),
-            index: HashMap::new(),
+            lookup: HashMap::new(),
         }
     }
 
@@ -31,132 +34,46 @@ impl<T: Default> Default for DupIndexer<T> {
     }
 }
 
-impl<T: UnsafeCopy + Eq + Hash> DupIndexer<T> {
+impl<T: Eq + Hash> DupIndexer<T> {
     /// Insert a value into the indexer if it doesn't already exist,
     /// and return the index of the value.
     pub fn insert(&mut self, value: T) -> usize {
-        let value = ManuallyDrop::new(value);
-        let index = self.index.get(&value);
-        let value = ManuallyDrop::into_inner(value);
-
-        if let Some(index) = index {
-            *index
-        } else {
-            let index = self.values.len();
-            // Index stores `val_dup` because the duplicate is "less sound" than the original.
-            // For example, the dup might not have the vector capacity value set, which we don't need for the read access.
-            self.index.insert(unsafe { value.duplicate() }, index);
-            self.values.push(value);
-            index
-        }
-    }
-}
-
-impl<T: Copy + Eq + Hash> DupIndexer<T> {
-    /// Insert a value into the indexer if it doesn't already exist,
-    /// and return the index of the value.
-    /// Same as [`DupIndexer::insert`] but for custom types that implement the [`Copy`] trait.
-    pub fn insert_copy(&mut self, value: T) -> usize {
-        let value = ManuallyDrop::new(value);
-        let index = self.index.get(&value);
-        let value = ManuallyDrop::into_inner(value);
-
-        if let Some(index) = index {
-            *index
-        } else {
-            let index = self.values.len();
-            self.index.insert(ManuallyDrop::new(value), index);
-            self.values.push(value);
-            index
-        }
-    }
-}
-
-/// Trait for non-[Copy]-able types to create a shallow copy of an object so it can be used by [`DupIndexer`].
-/// The usage and implementation of this trait is inherently unsafe.
-pub unsafe trait UnsafeCopy {
-    /// Creates a shallow copy of an object without allocating new memory.
-    /// # Safety
-    /// The duplicate can be less sound than the original,
-    /// but it must be safe to use as a `HashMap` key for read-only lookups.
-    /// The duplicate will not be dropped.
-    /// Object duplication is unsafe, and should only be called by the [`DupIndexer`] implementation.
-    unsafe fn duplicate(&self) -> ManuallyDrop<Self>
-    where
-        ManuallyDrop<Self>: Sized;
-}
-
-unsafe impl UnsafeCopy for String {
-    unsafe fn duplicate(&self) -> ManuallyDrop<Self> {
-        let (ptr, len, cap) = (self.as_ptr(), self.len(), self.capacity());
-        ManuallyDrop::new(unsafe { String::from_raw_parts(ptr as *mut u8, len, cap) })
-    }
-}
-
-unsafe impl<T> UnsafeCopy for Vec<T> {
-    unsafe fn duplicate(&self) -> ManuallyDrop<Self> {
-        let (ptr, len, cap) = (self.as_ptr(), self.len(), self.capacity());
-        ManuallyDrop::new(unsafe { Vec::from_raw_parts(ptr as *mut T, len, cap) })
-    }
-}
-
-impl<T: Eq + Hash> DupIndexer<Box<T>> {
-    /// Inserts a boxed value into the indexer, and returns the index of the inserted or existing value.
-    ///
-    /// # Safety
-    /// Make sure you only pass in a Box that was allocated using the default allocator.
-    /// Once <https://github.com/rust-lang/rust/issues/32838> is released,
-    /// this can be changed to use [`Box::from_raw_in`] instead, and it would become safer.
-    pub unsafe fn insert_box(&mut self, value: Box<T>) -> usize {
-        let value = ManuallyDrop::new(value);
-        if let Some(index) = self.index.get(&value) {
-            *index
-        } else {
-            let index = self.values.len();
-            let raw = Box::into_raw(ManuallyDrop::into_inner(value));
-
-            self.index
-                .insert(ManuallyDrop::new(unsafe { Box::from_raw(raw) }), index);
-
-            // Bad: first we destroyed the box, and now reconstructing it again using default allocator
-            let value = unsafe { Box::from_raw(raw) };
-            self.values.push(value);
-
-            index
-        }
-    }
-}
-
-macro_rules! impl_unsafe_copy {
-    ($($t:ty),* $(,)?) => {
-        $(
-            unsafe impl UnsafeCopy for $t {
-                #[inline(always)]
-                unsafe fn duplicate(&self) -> ManuallyDrop<Self> {
-                    ManuallyDrop::new(*self)
-                }
+        // This is safe because we own the value and will not drop it unless we consume the whole values vector,
+        // nor would we access the values in the vector before then.
+        // When dropping, index will be dropped without freeing the memory.
+        let dup_value = ManuallyDrop::new(unsafe { ptr::read(&value) });
+        match self.lookup.entry(dup_value) {
+            Occupied(entry) => *entry.get(),
+            Vacant(entry) => {
+                let index = self.values.len();
+                entry.insert(index);
+                self.values.push(value);
+                index
             }
-        )*
-    };
+        }
+    }
 }
 
-// Value types are always safe to duplicate because they implement `Copy` trait
-impl_unsafe_copy!(
-    &str, char, u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, bool,
-);
+impl<T> IntoIterator for DupIndexer<T> {
+    type Item = T;
+    type IntoIter = std::vec::IntoIter<T>;
+
+    fn into_iter(self) -> std::vec::IntoIter<T> {
+        self.values.into_iter()
+    }
+}
+
+impl<T: Debug> Debug for DupIndexer<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_map()
+            .entries(self.values.iter().enumerate())
+            .finish()
+    }
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    unsafe impl UnsafeCopy for Value {
-        unsafe fn duplicate(&self) -> ManuallyDrop<Self> {
-            ManuallyDrop::new(match self {
-                Value::Str(v) => unsafe { Value::Str(ManuallyDrop::into_inner(v.duplicate())) },
-                Value::Int(v) => Value::Int(*v),
-            })
-        }
-    }
 
     #[derive(Debug, Eq, PartialEq, Hash)]
     enum Value {
@@ -192,6 +109,12 @@ mod tests {
         assert_eq!(1, di.insert(13));
         assert_eq!(0, di.insert(42));
         assert_eq!(di.into_vec(), vec![42, 13]);
+
+        let mut di: DupIndexer<i32> = DupIndexer::default();
+        assert_eq!(0, di.insert(42));
+        assert_eq!(1, di.insert(13));
+        assert_eq!(0, di.insert(42));
+        assert_eq!(di.into_iter().collect::<Vec::<_>>(), vec![42, 13]);
     }
 
     #[test]
@@ -200,9 +123,9 @@ mod tests {
         struct Foo(pub i32);
 
         let mut di: DupIndexer<Foo> = DupIndexer::new();
-        assert_eq!(0, di.insert_copy(Foo(42)));
-        assert_eq!(1, di.insert_copy(Foo(13)));
-        assert_eq!(0, di.insert_copy(Foo(42)));
+        assert_eq!(0, di.insert(Foo(42)));
+        assert_eq!(1, di.insert(Foo(13)));
+        assert_eq!(0, di.insert(Foo(42)));
         assert_eq!(di.into_vec(), vec![Foo(42), Foo(13)]);
     }
 
@@ -212,6 +135,7 @@ mod tests {
         assert_eq!(0, di.insert("foo".to_string()));
         assert_eq!(1, di.insert("bar".to_string()));
         assert_eq!(0, di.insert("foo".to_string()));
+        assert_eq!(format!("{di:?}"), r#"{0: "foo", 1: "bar"}"#);
         assert_eq!(di.into_vec(), vec!["foo".to_string(), "bar".to_string()]);
     }
 
@@ -219,17 +143,48 @@ mod tests {
     fn test_vec() {
         let mut di: DupIndexer<Vec<i32>> = DupIndexer::default();
         assert_eq!(0, di.insert(vec![1, 2, 3]));
-        assert_eq!(1, di.insert(vec![1, 2, 4]));
+        assert_eq!(1, di.insert(vec![1, 2]));
         assert_eq!(0, di.insert(vec![1, 2, 3]));
-        assert_eq!(di.into_vec(), vec![vec![1, 2, 3], vec![1, 2, 4]]);
+        assert_eq!(di.into_vec(), vec![vec![1, 2, 3], vec![1, 2]]);
+    }
+
+    #[test]
+    fn test_debug_fmt() {
+        let mut di: DupIndexer<char> = DupIndexer::default();
+        assert_eq!(0, di.insert('a'));
+        assert_eq!(1, di.insert('b'));
+        assert_eq!(2, di.insert('c'));
+        assert_eq!(1, di.insert('b'));
+        assert_eq!(format!("{di:?}"), "{0: 'a', 1: 'b', 2: 'c'}");
+        assert_eq!(di.into_vec(), vec!['a', 'b', 'c']);
+    }
+
+    #[test]
+    fn test_many_strings() {
+        const ITERATIONS: usize = 100;
+        let mut di: DupIndexer<String> = DupIndexer::new();
+        for shift in &[0, ITERATIONS] {
+            for _pass in 0..2 {
+                for idx in 0..ITERATIONS {
+                    assert_eq!(idx + shift, di.insert((idx + shift).to_string()));
+                }
+            }
+        }
+        assert_eq!(
+            di.into_vec(),
+            (0..ITERATIONS * 2)
+                .into_iter()
+                .map(|i| i.to_string())
+                .collect::<Vec<_>>()
+        );
     }
 
     #[test]
     fn test_box() {
         let mut di: DupIndexer<Box<i32>> = DupIndexer::default();
-        assert_eq!(0, unsafe { di.insert_box(Box::new(42)) });
-        unsafe { di.insert_box(Box::new(13)) };
-        assert_eq!(0, unsafe { di.insert_box(Box::new(42)) });
+        assert_eq!(0, di.insert(Box::new(42)));
+        assert_eq!(1, di.insert(Box::new(13)));
+        assert_eq!(0, di.insert(Box::new(42)));
         assert_eq!(di.into_vec(), vec![Box::new(42), Box::new(13)]);
     }
 }
