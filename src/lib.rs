@@ -116,15 +116,15 @@ mod tests {
     fn test_str() {
         let mut di: DupIndexer<&str> = DupIndexer::default();
         assert!(di.is_empty());
-        assert_eq!(0, di.capacity());
-        assert_eq!(0, di.insert("foo"));
-        assert_eq!(1, di.insert("bar"));
-        assert_eq!(0, di.insert("foo"));
-        assert_eq!("bar", di[1]);
+        assert_eq!(di.capacity(), 0);
+        assert_eq!(di.insert("foo"), 0);
+        assert_eq!(di.insert("bar"), 1);
+        assert_eq!(di.insert("foo"), 0);
+        assert_eq!(di[1], "bar");
         assert!(!di.is_empty());
-        assert_eq!(2, di.len());
+        assert_eq!(di.len(), 2);
         assert!(di.capacity() >= 2);
-        assert_eq!(&["foo", "bar"], di.as_slice());
+        assert_eq!(di.as_slice(), &["foo", "bar"]);
         assert_eq!(format!("{di:?}"), r#"{0: "foo", 1: "bar"}"#);
         assert_eq!(di.into_vec(), vec!["foo", "bar"]);
     }
@@ -134,25 +134,26 @@ mod tests {
         let mut di: DupIndexer<String> = DupIndexer::with_capacity(5);
         assert!(di.is_empty());
         assert!(di.capacity() >= 5);
-        assert_eq!(0, di.insert("foo".to_string()));
-        assert_eq!(1, di.insert("bar".to_string()));
-        assert_eq!(0, di.insert("foo".to_string()));
-        assert_eq!("bar".to_string(), di[1]);
+        assert_eq!(di.insert("foo".to_string()), 0);
+        assert_eq!(di.insert("bar".to_string()), 1);
+        assert_eq!(di.insert("foo".to_string()), 0);
+        assert_eq!(di[1], "bar");
+        assert_eq!(di[1], "bar".to_string());
         assert!(!di.is_empty());
-        assert_eq!(2, di.len());
+        assert_eq!(di.len(), 2);
         assert!(di.capacity() >= 5);
-        assert_eq!(&["foo", "bar"], di.as_slice());
+        assert_eq!(di.as_slice(), &["foo", "bar"]);
         assert_eq!(format!("{di:?}"), r#"{0: "foo", 1: "bar"}"#);
-        assert_eq!(di.into_vec(), vec!["foo".to_string(), "bar".to_string()]);
+        assert_eq!(di.into_vec(), vec!["foo", "bar"]);
     }
 
     #[test]
     fn test_copyable_value() {
         let mut di: DupIndexer<i32> = DupIndexer::default();
-        assert_eq!(0, di.insert(42));
-        assert_eq!(1, di.insert(13));
-        assert_eq!(0, di.insert(42));
-        assert_eq!(13, di[1]);
+        assert_eq!(di.insert(42), 0);
+        assert_eq!(di.insert(13), 1);
+        assert_eq!(di.insert(42), 0);
+        assert_eq!(di[1], 13);
         assert_eq!(di.into_iter().collect::<Vec::<_>>(), vec![42, 13]);
     }
 
@@ -162,31 +163,31 @@ mod tests {
         struct Foo(pub i32);
 
         let mut di: DupIndexer<Foo> = DupIndexer::new();
-        assert_eq!(0, di.insert(Foo(42)));
-        assert_eq!(1, di.insert(Foo(13)));
-        assert_eq!(0, di.insert(Foo(42)));
-        assert_eq!(Foo(13), di[1]);
+        assert_eq!(di.insert(Foo(42)), 0);
+        assert_eq!(di.insert(Foo(13)), 1);
+        assert_eq!(di.insert(Foo(42)), 0);
+        assert_eq!(di[1], Foo(13));
         assert_eq!(di.into_vec(), vec![Foo(42), Foo(13)]);
     }
 
     #[test]
     fn test_vec() {
         let mut di: DupIndexer<Vec<i32>> = DupIndexer::default();
-        assert_eq!(0, di.insert(vec![1, 2, 3]));
-        assert_eq!(1, di.insert(vec![1, 2]));
-        assert_eq!(0, di.insert(vec![1, 2, 3]));
-        assert_eq!(vec![1, 2], di[1]);
+        assert_eq!(di.insert(vec![1, 2, 3]), 0);
+        assert_eq!(di.insert(vec![1, 2]), 1);
+        assert_eq!(di.insert(vec![1, 2, 3]), 0);
+        assert_eq!(di[1], vec![1, 2]);
         assert_eq!(di.into_vec(), vec![vec![1, 2, 3], vec![1, 2]]);
     }
 
     #[test]
     fn test_debug_fmt() {
         let mut di: DupIndexer<char> = DupIndexer::default();
-        assert_eq!(0, di.insert('a'));
-        assert_eq!(1, di.insert('b'));
-        assert_eq!(2, di.insert('c'));
-        assert_eq!(1, di.insert('b'));
-        assert_eq!('c', di[2]);
+        assert_eq!(di.insert('a'), 0);
+        assert_eq!(di.insert('b'), 1);
+        assert_eq!(di.insert('c'), 2);
+        assert_eq!(di.insert('b'), 1);
+        assert_eq!(di[2], 'c');
         assert_eq!(format!("{di:?}"), "{0: 'a', 1: 'b', 2: 'c'}");
         assert_eq!(di.into_vec(), vec!['a', 'b', 'c']);
     }
@@ -200,7 +201,7 @@ mod tests {
         for shift in &[0, ITERATIONS] {
             for _pass in 0..2 {
                 for idx in 0..ITERATIONS {
-                    assert_eq!(idx + shift, di.insert((idx + shift).to_string()));
+                    assert_eq!(di.insert((idx + shift).to_string()), idx + shift);
                     if old_capacity == 0 {
                         old_capacity = di.capacity();
                     } else if di.capacity() > old_capacity {
@@ -226,10 +227,10 @@ mod tests {
     #[cfg_attr(miri, ignore)]
     fn test_box() {
         let mut di: DupIndexer<Box<i32>> = DupIndexer::default();
-        assert_eq!(0, di.insert(Box::new(42)));
-        assert_eq!(1, di.insert(Box::new(13)));
-        assert_eq!(0, di.insert(Box::new(42)));
-        assert_eq!(Box::new(13), di[1]);
+        assert_eq!(di.insert(Box::new(42)), 0);
+        assert_eq!(di.insert(Box::new(13)), 1);
+        assert_eq!(di.insert(Box::new(42)), 0);
+        assert_eq!(di[1], Box::new(13));
         assert_eq!(di.into_vec(), vec![Box::new(42), Box::new(13)]);
     }
 
@@ -242,10 +243,10 @@ mod tests {
     #[test]
     fn test_custom_trait() {
         let mut di: DupIndexer<Value> = DupIndexer::new();
-        assert_eq!(0, di.insert(Value::Str("foo".to_string())));
-        assert_eq!(1, di.insert(Value::Int(42)));
-        assert_eq!(0, di.insert(Value::Str("foo".to_string())));
-        assert_eq!(Value::Int(42), di[1]);
+        assert_eq!(di.insert(Value::Str("foo".to_string())), 0);
+        assert_eq!(di.insert(Value::Int(42)), 1);
+        assert_eq!(di.insert(Value::Str("foo".to_string())), 0);
+        assert_eq!(di[1], Value::Int(42));
         assert_eq!(
             di.into_vec(),
             vec![Value::Str("foo".to_string()), Value::Int(42)]
