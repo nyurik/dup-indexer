@@ -22,10 +22,11 @@ fn main() {
     assert_eq!(di.into_vec(), vec!["hello".to_string(), "world".to_string()]);
 
     // Using i32 values
-    let mut di = DupIndexer::new();
+    let mut di = DupIndexer::with_capacity(10);
     assert_eq!(0, di.insert(42));
     assert_eq!(1, di.insert(13));
     assert_eq!(0, di.insert(42));
+    assert_eq!(42, di[1]); // use it as a read-only vector
     assert_eq!(di.into_iter().collect::<Vec<_>>(), vec![42, 13]);
 }
 ```
