@@ -4,7 +4,7 @@
 [![crates.io version](https://img.shields.io/crates/v/dup-indexer.svg)](https://crates.io/crates/dup-indexer)
 [![docs.rs docs](https://docs.rs/dup-indexer/badge.svg)](https://docs.rs/dup-indexer)
 
-Create a non-duplicated vector of values without extra memory allocations, even for ref values like `String`, `Vec`, and `Box`. The resulting vector is guaranteed to be in the same order as the original insertion order.
+Create a non-duplicated vector of values without extra memory allocations, even for ref values like `String`, `Vec`, and `Box`. Each insertion returns the `usize` index of the inserted value. When done, the entire vector can be used.
 
 This approach is useful for creating a vector of unique values, such as a list of unique strings, or a list of unique objects, and then using the index of the value in the vector as a unique identifier, e.g. in a protobuf message.
 
