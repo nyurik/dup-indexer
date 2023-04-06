@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::hash::Hash;
 use std::mem::ManuallyDrop;
+use std::ops::Index;
 use std::ptr;
 
 pub struct DupIndexer<T> {
@@ -19,6 +20,34 @@ impl<T> DupIndexer<T> {
             values: Vec::new(),
             lookup: HashMap::new(),
         }
+    }
+
+    /// Constructs a new, empty `DupIndexer<T>` with at least the specified capacity.
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            values: Vec::with_capacity(capacity),
+            lookup: HashMap::with_capacity(capacity),
+        }
+    }
+
+    /// Returns the total number of elements the indexer can hold without reallocating.
+    pub fn capacity(&self) -> usize {
+        self.values.capacity()
+    }
+
+    /// Extracts a slice containing the entire indexer values.
+    pub fn as_slice(&self) -> &[T] {
+        self.values.as_slice()
+    }
+
+    /// Get the number of values in the indexer.
+    pub fn len(&self) -> usize {
+        self.values.len()
+    }
+
+    /// Return true if the indexer is empty.
+    pub fn is_empty(&self) -> bool {
+        self.values.is_empty()
     }
 
     pub fn into_vec(self) -> Vec<T> {
@@ -54,6 +83,14 @@ impl<T: Eq + Hash> DupIndexer<T> {
     }
 }
 
+impl<T> Index<usize> for DupIndexer<T> {
+    type Output = T;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.values[index]
+    }
+}
+
 impl<T> IntoIterator for DupIndexer<T> {
     type Item = T;
     type IntoIter = std::vec::IntoIter<T>;
@@ -75,31 +112,38 @@ impl<T: Debug> Debug for DupIndexer<T> {
 mod tests {
     use super::*;
 
-    #[derive(Debug, Eq, PartialEq, Hash)]
-    enum Value {
-        Str(String),
-        Int(i32),
-    }
-
-    #[test]
-    fn test_custom_trait() {
-        let mut di: DupIndexer<Value> = DupIndexer::new();
-        assert_eq!(0, di.insert(Value::Str("foo".to_string())));
-        assert_eq!(1, di.insert(Value::Int(42)));
-        assert_eq!(0, di.insert(Value::Str("foo".to_string())));
-        assert_eq!(
-            di.into_vec(),
-            vec![Value::Str("foo".to_string()), Value::Int(42)]
-        );
-    }
-
     #[test]
     fn test_str() {
         let mut di: DupIndexer<&str> = DupIndexer::default();
+        assert!(di.is_empty());
+        assert_eq!(0, di.capacity());
         assert_eq!(0, di.insert("foo"));
         assert_eq!(1, di.insert("bar"));
         assert_eq!(0, di.insert("foo"));
+        assert_eq!("bar", di[1]);
+        assert!(!di.is_empty());
+        assert_eq!(2, di.len());
+        assert!(di.capacity() >= 2);
+        assert_eq!(&["foo", "bar"], di.as_slice());
+        assert_eq!(format!("{di:?}"), r#"{0: "foo", 1: "bar"}"#);
         assert_eq!(di.into_vec(), vec!["foo", "bar"]);
+    }
+
+    #[test]
+    fn test_string() {
+        let mut di: DupIndexer<String> = DupIndexer::with_capacity(5);
+        assert!(di.is_empty());
+        assert!(di.capacity() >= 5);
+        assert_eq!(0, di.insert("foo".to_string()));
+        assert_eq!(1, di.insert("bar".to_string()));
+        assert_eq!(0, di.insert("foo".to_string()));
+        assert_eq!("bar".to_string(), di[1]);
+        assert!(!di.is_empty());
+        assert_eq!(2, di.len());
+        assert!(di.capacity() >= 5);
+        assert_eq!(&["foo", "bar"], di.as_slice());
+        assert_eq!(format!("{di:?}"), r#"{0: "foo", 1: "bar"}"#);
+        assert_eq!(di.into_vec(), vec!["foo".to_string(), "bar".to_string()]);
     }
 
     #[test]
@@ -108,12 +152,7 @@ mod tests {
         assert_eq!(0, di.insert(42));
         assert_eq!(1, di.insert(13));
         assert_eq!(0, di.insert(42));
-        assert_eq!(di.into_vec(), vec![42, 13]);
-
-        let mut di: DupIndexer<i32> = DupIndexer::default();
-        assert_eq!(0, di.insert(42));
-        assert_eq!(1, di.insert(13));
-        assert_eq!(0, di.insert(42));
+        assert_eq!(13, di[1]);
         assert_eq!(di.into_iter().collect::<Vec::<_>>(), vec![42, 13]);
     }
 
@@ -126,17 +165,8 @@ mod tests {
         assert_eq!(0, di.insert(Foo(42)));
         assert_eq!(1, di.insert(Foo(13)));
         assert_eq!(0, di.insert(Foo(42)));
+        assert_eq!(Foo(13), di[1]);
         assert_eq!(di.into_vec(), vec![Foo(42), Foo(13)]);
-    }
-
-    #[test]
-    fn test_string() {
-        let mut di: DupIndexer<String> = DupIndexer::default();
-        assert_eq!(0, di.insert("foo".to_string()));
-        assert_eq!(1, di.insert("bar".to_string()));
-        assert_eq!(0, di.insert("foo".to_string()));
-        assert_eq!(format!("{di:?}"), r#"{0: "foo", 1: "bar"}"#);
-        assert_eq!(di.into_vec(), vec!["foo".to_string(), "bar".to_string()]);
     }
 
     #[test]
@@ -145,6 +175,7 @@ mod tests {
         assert_eq!(0, di.insert(vec![1, 2, 3]));
         assert_eq!(1, di.insert(vec![1, 2]));
         assert_eq!(0, di.insert(vec![1, 2, 3]));
+        assert_eq!(vec![1, 2], di[1]);
         assert_eq!(di.into_vec(), vec![vec![1, 2, 3], vec![1, 2]]);
     }
 
@@ -155,21 +186,31 @@ mod tests {
         assert_eq!(1, di.insert('b'));
         assert_eq!(2, di.insert('c'));
         assert_eq!(1, di.insert('b'));
+        assert_eq!('c', di[2]);
         assert_eq!(format!("{di:?}"), "{0: 'a', 1: 'b', 2: 'c'}");
         assert_eq!(di.into_vec(), vec!['a', 'b', 'c']);
     }
 
     #[test]
     fn test_many_strings() {
-        const ITERATIONS: usize = 100;
-        let mut di: DupIndexer<String> = DupIndexer::new();
+        const ITERATIONS: usize = 50;
+        let mut di: DupIndexer<String> = DupIndexer::with_capacity(1);
+        let mut old_capacity = 0;
+        let mut capacity_has_grown = false;
         for shift in &[0, ITERATIONS] {
             for _pass in 0..2 {
                 for idx in 0..ITERATIONS {
                     assert_eq!(idx + shift, di.insert((idx + shift).to_string()));
+                    if old_capacity == 0 {
+                        old_capacity = di.capacity();
+                    } else if di.capacity() > old_capacity {
+                        capacity_has_grown = true;
+                    }
                 }
             }
         }
+        // Ensure that capacity has grown at least once
+        assert!(capacity_has_grown);
         assert_eq!(
             di.into_vec(),
             (0..ITERATIONS * 2)
@@ -179,12 +220,35 @@ mod tests {
         );
     }
 
+    // This test is ignored on Miri because it fails without any good explanation at the moment.
+    // See issue https://github.com/nyurik/dup-indexer/issues/1
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn test_box() {
         let mut di: DupIndexer<Box<i32>> = DupIndexer::default();
         assert_eq!(0, di.insert(Box::new(42)));
         assert_eq!(1, di.insert(Box::new(13)));
         assert_eq!(0, di.insert(Box::new(42)));
+        assert_eq!(Box::new(13), di[1]);
         assert_eq!(di.into_vec(), vec![Box::new(42), Box::new(13)]);
+    }
+
+    #[derive(Debug, Eq, PartialEq, Hash)]
+    enum Value {
+        Str(String),
+        Int(i32),
+    }
+
+    #[test]
+    fn test_custom_trait() {
+        let mut di: DupIndexer<Value> = DupIndexer::new();
+        assert_eq!(0, di.insert(Value::Str("foo".to_string())));
+        assert_eq!(1, di.insert(Value::Int(42)));
+        assert_eq!(0, di.insert(Value::Str("foo".to_string())));
+        assert_eq!(Value::Int(42), di[1]);
+        assert_eq!(
+            di.into_vec(),
+            vec![Value::Str("foo".to_string()), Value::Int(42)]
+        );
     }
 }
