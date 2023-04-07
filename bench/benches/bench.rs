@@ -79,43 +79,5 @@ fn benchmark(c: &mut Criterion) {
     });
 }
 
-fn benchmark_strings(c: &mut Criterion) {
-    let mut group = c.benchmark_group("Strings");
-
-    group.bench_function("String", |b| {
-        b.iter(|| {
-            let mut di = DupIndexer::new();
-            for _ in 0..10 {
-                for val in 0..10000 {
-                    black_box(di.insert(val.to_string()));
-                }
-            }
-            black_box(di.into_vec())
-        })
-    });
-
-    group.bench_function("String-linear", |b| {
-        b.iter(|| {
-            let mut di = Vec::new();
-            for _ in 0..10 {
-                for val in 0..10000 {
-                    black_box(get_index_or_add(val.to_string(), &mut di));
-                }
-            }
-            black_box(di)
-        })
-    });
-
-    fn get_index_or_add(s: String, v: &mut Vec<String>) -> usize {
-        match v.iter().position(|x| x == &s) {
-            Some(i) => i,
-            None => {
-                v.push(s);
-                v.len() - 1
-            }
-        }
-    }
-}
-
-criterion_group!(benches, benchmark_strings);
+criterion_group!(benches, benchmark);
 criterion_main!(benches);
