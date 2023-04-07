@@ -6,7 +6,7 @@ use std::fmt::{Debug, Formatter};
 use std::hash::Hash;
 use std::mem::ManuallyDrop;
 use std::ops::Index;
-use std::ptr;
+use std::{ops, ptr};
 
 pub struct DupIndexer<T> {
     values: Vec<T>,
@@ -31,25 +31,31 @@ impl<T> DupIndexer<T> {
     }
 
     /// Returns the total number of elements the indexer can hold without reallocating.
+    #[inline]
     pub fn capacity(&self) -> usize {
         self.values.capacity()
     }
 
     /// Extracts a slice containing the entire indexer values.
+    #[inline]
     pub fn as_slice(&self) -> &[T] {
-        self.values.as_slice()
+        self
     }
 
     /// Get the number of values in the indexer.
+    #[inline]
     pub fn len(&self) -> usize {
         self.values.len()
     }
 
     /// Return true if the indexer is empty.
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.values.is_empty()
     }
 
+    /// Converts the indexer into a vector.
+    #[inline]
     pub fn into_vec(self) -> Vec<T> {
         self.values
     }
@@ -58,6 +64,7 @@ impl<T> DupIndexer<T> {
 /// If `T` implements `Default`, create a new instance of `DupIndexer<T>`.
 /// Note that [`DupIndexer::new`] does not require `T` to implement `Default`.
 impl<T: Default> Default for DupIndexer<T> {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -86,6 +93,7 @@ impl<T: Eq + Hash> DupIndexer<T> {
 impl<T> Index<usize> for DupIndexer<T> {
     type Output = T;
 
+    #[inline]
     fn index(&self, index: usize) -> &Self::Output {
         &self.values[index]
     }
@@ -95,8 +103,18 @@ impl<T> IntoIterator for DupIndexer<T> {
     type Item = T;
     type IntoIter = std::vec::IntoIter<T>;
 
+    #[inline]
     fn into_iter(self) -> std::vec::IntoIter<T> {
         self.values.into_iter()
+    }
+}
+
+impl<T> ops::Deref for DupIndexer<T> {
+    type Target = [T];
+
+    #[inline]
+    fn deref(&self) -> &[T] {
+        &self.values
     }
 }
 
@@ -111,6 +129,7 @@ impl<T: Debug> Debug for DupIndexer<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::ops::Deref;
 
     #[test]
     fn test_str() {
@@ -124,6 +143,7 @@ mod tests {
         assert!(!di.is_empty());
         assert_eq!(di.len(), 2);
         assert!(di.capacity() >= 2);
+        assert_eq!(di.deref(), &["foo", "bar"]);
         assert_eq!(di.as_slice(), &["foo", "bar"]);
         assert_eq!(format!("{di:?}"), r#"{0: "foo", 1: "bar"}"#);
         assert_eq!(di.into_vec(), vec!["foo", "bar"]);
@@ -142,6 +162,7 @@ mod tests {
         assert!(!di.is_empty());
         assert_eq!(di.len(), 2);
         assert!(di.capacity() >= 5);
+        assert_eq!(di.deref(), &["foo", "bar"]);
         assert_eq!(di.as_slice(), &["foo", "bar"]);
         assert_eq!(format!("{di:?}"), r#"{0: "foo", 1: "bar"}"#);
         assert_eq!(di.into_vec(), vec!["foo", "bar"]);

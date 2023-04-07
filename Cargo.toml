@@ -1,7 +1,8 @@
 [package]
 name = "dup-indexer"
-version = "0.2.1"
+version = "0.2.2"
 description = "Create a non-duplicated index from Strings, static str, Vec, or Box values"
+keywords = ["index", "string", "intern", "duplicate", "unique"]
 authors = ["Yuri Astrakhan <YuriAstrakhan@gmail.com>"]
 repository = "https://github.com/nyurik/dup-indexer"
 edition = "2021"

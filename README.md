@@ -85,3 +85,9 @@ help: <170684> was later invalidated at offsets [0x0..0x4] by a Unique retag
 50   |                 self.values.push(value);
      |                                  ^^^^^
 ```
+
+## Development
+* To run tests, use `cargo test`.
+* To run benchmarks, use `cargo bench -p bench`.
+* To test with Miri, use `cargo +nightly miri test` (note that one test is disabled due to the above issue).
+* `git push` will run a few validations first, i.e. `fmt`, `clippy`, `test`, ...
