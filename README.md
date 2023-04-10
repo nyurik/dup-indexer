@@ -1,8 +1,9 @@
 # Dup-Indexer
 
-[![CI build](https://github.com/nyurik/dup-indexer/workflows/CI/badge.svg)](https://github.com/nyurik/dup-indexer/actions)
+[![GitHub](https://img.shields.io/badge/github-nyurik/dup--indexer-8da0cb?logo=github)](https://github.com/nyurik/dup-indexer)
 [![crates.io version](https://img.shields.io/crates/v/dup-indexer.svg)](https://crates.io/crates/dup-indexer)
 [![docs.rs docs](https://docs.rs/dup-indexer/badge.svg)](https://docs.rs/dup-indexer)
+[![CI build](https://github.com/nyurik/dup-indexer/workflows/CI/badge.svg)](https://github.com/nyurik/dup-indexer/actions)
 
 Create a non-duplicated vector of values without extra memory allocations, even for ref values like `String`, `Vec`, and `Box`. Each insertion returns the `usize` index of the inserted value. When done, the entire vector can be used.
 
