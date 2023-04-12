@@ -1,19 +1,61 @@
 #![doc = include_str!("../README.md")]
 
 use std::collections::hash_map::Entry::{Occupied, Vacant};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fmt::{Debug, Formatter};
 use std::hash::Hash;
 use std::mem::ManuallyDrop;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::num::{
+    NonZeroI128, NonZeroI16, NonZeroI32, NonZeroI64, NonZeroI8, NonZeroIsize, NonZeroU128,
+    NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize, Wrapping,
+};
 use std::ops::Index;
+use std::path::PathBuf;
+use std::time::{Duration, SystemTime};
 use std::{ops, ptr};
+
+/// A value that can be used as a key in a [`DupIndexer`], which will copy its content
+/// using the [`ptr::read`] function, while also owning it internally.
+///
+/// # Safety
+/// Implementing this trait is unsafe because the implementation must guarantee that
+/// the value can be copied by copying the bits of the value assuming that the value
+/// itself is valid and readonly. All Copy types are `PtrRead`, but Box<T> is not.
+pub unsafe trait PtrRead {}
+
+macro_rules! impl_trait {
+    ($($t:ty),*) => {
+        $(
+            unsafe impl PtrRead for $t {}
+        )*
+    };
+}
+
+impl_trait![(), &'static str];
+impl_trait![f32, f64, bool, char, String, PathBuf];
+impl_trait![SystemTime, Duration, Ipv4Addr, Ipv6Addr, IpAddr];
+impl_trait![u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize];
+impl_trait![NonZeroU8, NonZeroU16, NonZeroU32];
+impl_trait![NonZeroU64, NonZeroU128, NonZeroUsize];
+impl_trait![NonZeroI8, NonZeroI16, NonZeroI32];
+impl_trait![NonZeroI64, NonZeroI128, NonZeroIsize];
+
+unsafe impl<T: PtrRead> PtrRead for [T] {}
+unsafe impl<T: PtrRead, const N: usize> PtrRead for [T; N] {}
+unsafe impl<T: PtrRead> PtrRead for Wrapping<T> {}
+unsafe impl<T: PtrRead> PtrRead for Option<T> {}
+unsafe impl<T: PtrRead> PtrRead for Vec<T> {}
+unsafe impl<T: PtrRead, V: PtrRead, S> PtrRead for HashMap<T, V, S> {}
+unsafe impl<T: PtrRead, V: PtrRead> PtrRead for BTreeMap<T, V> {}
+unsafe impl<T: PtrRead> PtrRead for BTreeSet<T> {}
 
 pub struct DupIndexer<T> {
     values: Vec<T>,
     lookup: HashMap<ManuallyDrop<T>, usize>,
 }
 
-impl<T> DupIndexer<T> {
+impl<T: PtrRead> DupIndexer<T> {
     /// Create a new instance of `DupIndexer<T>`, without requiring `T` to implement `Default`.
     pub fn new() -> Self {
         Self {
@@ -63,7 +105,7 @@ impl<T> DupIndexer<T> {
 
 /// If `T` implements `Default`, create a new instance of `DupIndexer<T>`.
 /// Note that [`DupIndexer::new`] does not require `T` to implement `Default`.
-impl<T: Default> Default for DupIndexer<T> {
+impl<T: PtrRead + Default> Default for DupIndexer<T> {
     #[inline]
     fn default() -> Self {
         Self::new()
@@ -183,6 +225,8 @@ mod tests {
         #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
         struct Foo(pub i32);
 
+        unsafe impl PtrRead for Foo {}
+
         let mut di: DupIndexer<Foo> = DupIndexer::new();
         assert_eq!(di.insert(Foo(42)), 0);
         assert_eq!(di.insert(Foo(13)), 1);
@@ -242,27 +286,16 @@ mod tests {
         );
     }
 
-    // This test is ignored on Miri because it fails without any good explanation at the moment.
-    // See issue https://github.com/nyurik/dup-indexer/issues/1
-    #[test]
-    #[cfg_attr(miri, ignore)]
-    fn test_box() {
-        let mut di: DupIndexer<Box<i32>> = DupIndexer::default();
-        assert_eq!(di.insert(Box::new(42)), 0);
-        assert_eq!(di.insert(Box::new(13)), 1);
-        assert_eq!(di.insert(Box::new(42)), 0);
-        assert_eq!(di[1], Box::new(13));
-        assert_eq!(di.into_vec(), vec![Box::new(42), Box::new(13)]);
-    }
-
-    #[derive(Debug, Eq, PartialEq, Hash)]
-    enum Value {
-        Str(String),
-        Int(i32),
-    }
-
     #[test]
     fn test_custom_trait() {
+        #[derive(Debug, Eq, PartialEq, Hash)]
+        enum Value {
+            Str(String),
+            Int(i32),
+        }
+
+        unsafe impl PtrRead for Value {}
+
         let mut di: DupIndexer<Value> = DupIndexer::new();
         assert_eq!(di.insert(Value::Str("foo".to_string())), 0);
         assert_eq!(di.insert(Value::Int(42)), 1);
@@ -273,4 +306,17 @@ mod tests {
             vec![Value::Str("foo".to_string()), Value::Int(42)]
         );
     }
+
+    // // This test is ignored on Miri because it fails without any good explanation at the moment.
+    // // See issue https://github.com/nyurik/dup-indexer/issues/1
+    // #[test]
+    // #[cfg_attr(miri, ignore)]
+    // fn test_box() {
+    //     let mut di: DupIndexer<Box<i32>> = DupIndexer::default();
+    //     assert_eq!(di.insert(Box::new(42)), 0);
+    //     assert_eq!(di.insert(Box::new(13)), 1);
+    //     assert_eq!(di.insert(Box::new(42)), 0);
+    //     assert_eq!(di[1], Box::new(13));
+    //     assert_eq!(di.into_vec(), vec![Box::new(42), Box::new(13)]);
+    // }
 }

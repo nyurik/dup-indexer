@@ -1,6 +1,6 @@
 [package]
 name = "dup-indexer"
-version = "0.2.3"
+version = "0.3.0"
 description = "Create a non-duplicated index from Strings, static str, Vec, or Box values"
 keywords = ["index", "string", "intern", "duplicate", "unique"]
 categories = ["algorithms", "data-structures"]
