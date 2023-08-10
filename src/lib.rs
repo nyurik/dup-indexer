@@ -1,4 +1,4 @@
-#![cfg_attr(feature = "default", doc = include_str!("../README.md"))]
+#![doc = include_str!("../README.md")]
 
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
@@ -10,7 +10,6 @@ use std::num::{
     NonZeroI128, NonZeroI16, NonZeroI32, NonZeroI64, NonZeroI8, NonZeroIsize, NonZeroU128,
     NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize, Wrapping,
 };
-use std::ops::Index;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 use std::{ops, ptr};
@@ -115,6 +114,17 @@ impl<T: PtrRead + Default> Default for DupIndexer<T> {
 impl<T: Eq + Hash> DupIndexer<T> {
     /// Insert a value into the indexer if it doesn't already exist,
     /// and return the index of the value.
+    ///
+    /// ```
+    /// # use dup_indexer::DupIndexer;
+    /// # fn main() {
+    /// let mut di = DupIndexer::<String>::new();
+    /// assert_eq!(di.insert("hello".to_string()), 0);
+    /// assert_eq!(di.insert("world".to_string()), 1);
+    /// assert_eq!(di.insert("hello".to_string()), 0);
+    /// assert_eq!(di.into_vec(), vec!["hello", "world"]);
+    /// # }
+    /// ```
     pub fn insert(&mut self, value: T) -> usize {
         // This is safe because we own the value and will not drop it unless we consume the whole values vector,
         // nor would we access the values in the vector before then.
@@ -132,7 +142,7 @@ impl<T: Eq + Hash> DupIndexer<T> {
     }
 }
 
-impl<T> Index<usize> for DupIndexer<T> {
+impl<T> ops::Index<usize> for DupIndexer<T> {
     type Output = T;
 
     #[inline]
@@ -218,7 +228,7 @@ mod tests {
         assert_eq!(di.insert(13), 1);
         assert_eq!(di.insert(42), 0);
         assert_eq!(di[1], 13);
-        assert_eq!(di.into_iter().collect::<Vec::<_>>(), vec![42, 13]);
+        assert_eq!(di.into_iter().collect::<Vec<_>>(), vec![42, 13]);
     }
 
     #[test]

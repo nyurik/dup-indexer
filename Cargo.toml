@@ -1,6 +1,6 @@
 [package]
 name = "dup-indexer"
-version = "0.3.1"
+version = "0.3.2"
 description = "Create a non-duplicated index from Strings, static str, Vec, or Box values"
 authors = ["Yuri Astrakhan <YuriAstrakhan@gmail.com>"]
 repository = "https://github.com/nyurik/dup-indexer"
@@ -16,5 +16,5 @@ rust-version = "1.60.0"
 cargo-husky = { version = "1", features = ["user-hooks"], default-features = false }
 
 [workspace]
-# Use `cargo bench -p bench` to run the benchmarks.
+# Use `just bench` or `cargo bench -p bench` to run the benchmarks.
 members = ["bench"]
