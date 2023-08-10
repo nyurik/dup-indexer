@@ -1,4 +1,4 @@
-#![doc = include_str!("../README.md")]
+#![cfg_attr(feature = "default", doc = include_str!("../README.md"))]
 
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
@@ -21,7 +21,7 @@ use std::{ops, ptr};
 /// # Safety
 /// Implementing this trait is unsafe because the implementation must guarantee that
 /// the value can be copied by copying the bits of the value assuming that the value
-/// itself is valid and readonly. All Copy types are `PtrRead`, but Box<T> is not.
+/// itself is valid and readonly. All Copy types are `PtrRead`, but `Box<T>` is not.
 pub unsafe trait PtrRead {}
 
 macro_rules! impl_trait {
@@ -170,8 +170,9 @@ impl<T: Debug> Debug for DupIndexer<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::ops::Deref;
+
+    use super::*;
 
     #[test]
     fn test_str() {
@@ -280,7 +281,6 @@ mod tests {
         assert_eq!(
             di.into_vec(),
             (0..ITERATIONS * 2)
-                .into_iter()
                 .map(|i| i.to_string())
                 .collect::<Vec<_>>()
         );

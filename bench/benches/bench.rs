@@ -1,7 +1,8 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use dup_indexer::DupIndexer;
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::HashMap;
+
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use dup_indexer::DupIndexer;
 
 #[derive(Default)]
 pub struct DupIndexerRaw {

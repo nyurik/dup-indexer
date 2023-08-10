@@ -3,6 +3,7 @@ name = "bench"
 description = "Benchmarks to run with `cargo bench`"
 version = "0.0.0"
 edition = "2021"
+publish = false
 
 [dependencies]
 dup-indexer = { path = ".." }
