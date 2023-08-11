@@ -15,30 +15,31 @@ This approach is useful for creating a vector of unique values, such as a list o
 ```rust
 use dup_indexer::DupIndexer;
 
-fn with_strings() {
+fn main() {
+    // with strings
     let mut di = DupIndexer::new();
     assert_eq!(di.insert("hello".to_string()), 0);
     assert_eq!(di.insert("world".to_string()), 1);
     assert_eq!(di.insert("hello".to_string()), 0);
     assert_eq!(di.into_vec(), vec!["hello", "world"]);
-}
 
-fn with_i32() {
+    // with i32
     let mut di = DupIndexer::with_capacity(10);
     assert_eq!(di.insert(42), 0);
     assert_eq!(di.insert(13), 1);
     assert_eq!(di.insert(42), 0);
     assert_eq!(di[1], 13); // use it as a read-only vector
     assert_eq!(di.into_iter().collect::<Vec<_>>(), vec![42, 13]);
-}
 
-fn with_custom_enum() {
-    #[derive(Debug, Eq, PartialEq, Hash)]
+    //
+    // with custom enum
+    //
+    #[derive(Debug, Eq, PartialEq, Hash, Clone)]
     enum Value {
         Str(String),
         Int(i32),
     }
-
+    
     // All values inside the Value enum implement PtrRead
     unsafe impl dup_indexer::PtrRead for Value {}
     

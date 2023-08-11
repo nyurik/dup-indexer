@@ -3,10 +3,6 @@
 @_default:
     just --list --unsorted
 
-# Run all tests
-test:
-    ./.cargo-husky/hooks/pre-push
-
 # Run cargo fmt and cargo clippy
 lint: fmt clippy
 
@@ -22,10 +18,15 @@ clippy:
 docs:
     cargo doc --no-deps --open
 
-# Run benchmarks
-bench:
-    cargo bench -p bench
+# Run all tests
+test:
+    ./.cargo-husky/hooks/pre-push
 
 # Run Miri test
 miri:
     cargo +nightly miri test
+
+# Run benchmarks
+bench:
+    cargo bench -p bench
+    open target/criterion/DupIndexer/report/index.html
