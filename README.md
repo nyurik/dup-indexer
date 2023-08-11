@@ -23,6 +23,13 @@ fn main() {
     assert_eq!(di.insert("hello".to_string()), 0);
     assert_eq!(di.into_vec(), vec!["hello", "world"]);
 
+    // with cloneable strings
+    let mut di: DupIndexer<String> = DupIndexer::new();
+    assert_eq!(di.insert_ref("hello"), 0);
+    assert_eq!(di.insert_ref("world"), 1);
+    assert_eq!(di.insert_ref("hello"), 0);
+    assert_eq!(di.into_vec(), vec!["hello", "world"]);
+
     // with i32
     let mut di = DupIndexer::with_capacity(10);
     assert_eq!(di.insert(42), 0);

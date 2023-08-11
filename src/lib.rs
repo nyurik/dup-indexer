@@ -1,5 +1,6 @@
 #![doc = include_str!("../README.md")]
 
+use std::borrow::Borrow;
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fmt::{Debug, Formatter};
@@ -11,7 +12,7 @@ use std::num::{
     NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize, Wrapping,
 };
 use std::ops::{Deref, Index};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::ptr;
 use std::time::{Duration, SystemTime};
 
@@ -50,9 +51,43 @@ unsafe impl<T: PtrRead, V: PtrRead, S> PtrRead for HashMap<T, V, S> {}
 unsafe impl<T: PtrRead, V: PtrRead> PtrRead for BTreeMap<T, V> {}
 unsafe impl<T: PtrRead> PtrRead for BTreeSet<T> {}
 
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(transparent)]
+pub struct ShallowCopy<T>(ManuallyDrop<T>);
+
+impl<T> ShallowCopy<T> {
+    #[inline]
+    pub(crate) unsafe fn new(value: &T) -> Self {
+        Self(ManuallyDrop::new(unsafe { ptr::read(value) }))
+    }
+}
+
+impl<T> Deref for ShallowCopy<T> {
+    type Target = T;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        self.0.deref()
+    }
+}
+
+impl Borrow<str> for ShallowCopy<String> {
+    #[inline]
+    fn borrow(&self) -> &str {
+        self
+    }
+}
+
+impl Borrow<Path> for ShallowCopy<PathBuf> {
+    #[inline]
+    fn borrow(&self) -> &Path {
+        self
+    }
+}
+
 pub struct DupIndexer<T> {
     values: Vec<T>,
-    lookup: HashMap<ManuallyDrop<T>, usize>,
+    lookup: HashMap<ShallowCopy<T>, usize>,
 }
 
 impl<T: PtrRead> DupIndexer<T> {
@@ -130,8 +165,7 @@ impl<T: Eq + Hash> DupIndexer<T> {
         // This is safe because we own the value and will not drop it unless we consume the whole values vector,
         // nor would we access the values in the vector before then.
         // When dropping, index will be dropped without freeing the memory.
-        let dup_value = ManuallyDrop::new(unsafe { ptr::read(&value) });
-        match self.lookup.entry(dup_value) {
+        match self.lookup.entry(unsafe { ShallowCopy::new(&value) }) {
             Occupied(entry) => *entry.get(),
             Vacant(entry) => {
                 let index = self.values.len();
@@ -139,6 +173,31 @@ impl<T: Eq + Hash> DupIndexer<T> {
                 self.values.push(value);
                 index
             }
+        }
+    }
+
+    /// Insert a cloneable value into the indexer if it doesn't already exist,
+    /// and return the index of the value. Slightly slower than [`DupIndexer::insert`],
+    /// but allows value to be a reference that does not need to be cloned if it was already added.
+    ///
+    /// ```
+    /// # use dup_indexer::DupIndexer;
+    /// # fn main() {
+    /// let mut di = DupIndexer::<String>::new();
+    /// assert_eq!(di.insert_ref("hello"), 0);
+    /// assert_eq!(di.insert_ref("world"), 1);
+    /// assert_eq!(di.insert_ref("hello"), 0);
+    /// assert_eq!(di.into_vec(), vec!["hello", "world"]);
+    /// # }
+    /// ```
+    pub fn insert_ref<Q: ?Sized>(&mut self, value: &Q) -> usize
+    where
+        ShallowCopy<T>: Borrow<Q>,
+        Q: Hash + Eq + ToOwned<Owned = T>,
+    {
+        match self.lookup.get(value) {
+            Some(index) => *index,
+            None => self.insert(value.to_owned()),
         }
     }
 }
@@ -182,6 +241,7 @@ impl<T: Debug> Debug for DupIndexer<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::hash::Hasher;
 
     #[test]
     fn test_str() {
@@ -217,6 +277,15 @@ mod tests {
         assert_eq!(di.deref(), &["foo", "bar"]);
         assert_eq!(di.as_slice(), &["foo", "bar"]);
         assert_eq!(format!("{di:?}"), r#"{0: "foo", 1: "bar"}"#);
+        assert_eq!(di.into_vec(), vec!["foo", "bar"]);
+    }
+
+    #[test]
+    fn test_string_own() {
+        let mut di: DupIndexer<String> = DupIndexer::<String>::with_capacity(5);
+        assert_eq!(di.insert_ref("foo"), 0);
+        assert_eq!(di.insert_ref("bar"), 1);
+        assert_eq!(di.insert_ref("foo"), 0);
         assert_eq!(di.into_vec(), vec!["foo", "bar"]);
     }
 
@@ -314,6 +383,117 @@ mod tests {
             di.into_vec(),
             vec![Value::Str("foo".to_string()), Value::Int(42)]
         );
+    }
+
+    #[test]
+    fn test_custom_cloneable_trait() {
+        #[derive(Debug, Eq, PartialEq, Hash, Clone)]
+        enum Value {
+            Str(String),
+            Int(i32),
+        }
+
+        #[derive(Debug, PartialEq, Eq, Hash)]
+        enum ValueRef<'a> {
+            Str(&'a str),
+            Int(i32),
+        }
+
+        impl ToOwned for dyn Key + '_ {
+            type Owned = Value;
+
+            fn to_owned(&self) -> Self::Owned {
+                match self.to_key() {
+                    ValueRef::Str(s) => Value::Str(s.to_owned()),
+                    ValueRef::Int(i) => Value::Int(i),
+                }
+            }
+        }
+
+        unsafe impl PtrRead for Value {}
+
+        trait Key {
+            fn to_key(&self) -> ValueRef;
+        }
+
+        impl Value {
+            fn as_ref(&self) -> ValueRef {
+                match self {
+                    Value::Str(v) => ValueRef::Str(v),
+                    Value::Int(v) => ValueRef::Int(*v),
+                }
+            }
+        }
+
+        impl Hash for dyn Key + '_ {
+            fn hash<H: Hasher>(&self, state: &mut H) {
+                self.to_key().hash(state);
+            }
+        }
+
+        impl PartialEq for dyn Key + '_ {
+            fn eq(&self, other: &Self) -> bool {
+                self.to_key() == other.to_key()
+            }
+        }
+
+        impl Eq for dyn Key + '_ {}
+
+        impl Key for Value {
+            fn to_key(&self) -> ValueRef {
+                self.as_ref()
+            }
+        }
+
+        impl<'a> Borrow<dyn Key + 'a> for ShallowCopy<Value> {
+            fn borrow(&self) -> &(dyn Key + 'a) {
+                self.deref().borrow()
+            }
+        }
+
+        impl<'a> Borrow<dyn Key + 'a> for Value {
+            fn borrow(&self) -> &(dyn Key + 'a) {
+                self
+            }
+        }
+
+        impl<'a> Key for &'a str {
+            fn to_key(&self) -> ValueRef {
+                ValueRef::Str(self)
+            }
+        }
+
+        impl<'a> Borrow<dyn Key + 'a> for &'a str {
+            fn borrow(&self) -> &(dyn Key + 'a) {
+                self
+            }
+        }
+
+        impl Key for i32 {
+            fn to_key(&self) -> ValueRef {
+                ValueRef::Int(*self)
+            }
+        }
+
+        impl<'a> Borrow<dyn Key + 'a> for i32 {
+            fn borrow(&self) -> &(dyn Key + 'a) {
+                self
+            }
+        }
+
+        let str_val = Value::Str("foo".to_string());
+        let int_val = Value::Int(42);
+        let mut di: DupIndexer<Value> = DupIndexer::new();
+        assert_eq!(di.insert_ref(&str_val as &dyn Key), 0);
+        assert_eq!(di.insert_ref(&int_val as &dyn Key), 1);
+        assert_eq!(di.insert_ref(&(str_val.clone()) as &dyn Key), 0);
+        assert_eq!(di.insert_ref(&"foo" as &dyn Key), 0);
+        assert_eq!(di.insert_ref(&42 as &dyn Key), 1);
+        assert_eq!(di[0], str_val);
+        assert_eq!(di[1], int_val);
+        assert_eq!(di.insert(str_val.clone()), 0);
+        assert_eq!(di.insert(int_val.clone()), 1);
+        assert_eq!(di.into_vec(), vec![str_val, int_val]);
     }
 
     // // This test is ignored on Miri because it fails without any good explanation at the moment.
