@@ -10,9 +10,10 @@ use std::num::{
     NonZeroI128, NonZeroI16, NonZeroI32, NonZeroI64, NonZeroI8, NonZeroIsize, NonZeroU128,
     NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize, Wrapping,
 };
+use std::ops::{Deref, Index};
 use std::path::PathBuf;
+use std::ptr;
 use std::time::{Duration, SystemTime};
-use std::{ops, ptr};
 
 /// A value that can be used as a key in a [`DupIndexer`], which will copy its content
 /// using the [`ptr::read`] function, while also owning it internally.
@@ -142,7 +143,7 @@ impl<T: Eq + Hash> DupIndexer<T> {
     }
 }
 
-impl<T> ops::Index<usize> for DupIndexer<T> {
+impl<T> Index<usize> for DupIndexer<T> {
     type Output = T;
 
     #[inline]
@@ -161,7 +162,7 @@ impl<T> IntoIterator for DupIndexer<T> {
     }
 }
 
-impl<T> ops::Deref for DupIndexer<T> {
+impl<T> Deref for DupIndexer<T> {
     type Target = [T];
 
     #[inline]
@@ -180,8 +181,6 @@ impl<T: Debug> Debug for DupIndexer<T> {
 
 #[cfg(test)]
 mod tests {
-    use std::ops::Deref;
-
     use super::*;
 
     #[test]
