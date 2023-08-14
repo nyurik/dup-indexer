@@ -1,6 +1,6 @@
 # Dup-Indexer
 
-[![GitHub](https://img.shields.io/badge/github-nyurik/dup--indexer-8da0cb?logo=github)](https://github.com/nyurik/dup-indexer)
+[![GitHub](https://img.shields.io/badge/github-dup--indexer-8da0cb?logo=github)](https://github.com/nyurik/dup-indexer)
 [![crates.io version](https://img.shields.io/crates/v/dup-indexer.svg)](https://crates.io/crates/dup-indexer)
 [![docs.rs docs](https://docs.rs/dup-indexer/badge.svg)](https://docs.rs/dup-indexer)
 [![crates.io version](https://img.shields.io/crates/l/dup-indexer.svg)](https://github.com/nyurik/dup-indexer/blob/main/LICENSE-APACHE)

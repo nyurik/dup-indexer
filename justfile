@@ -27,11 +27,11 @@ docs:
 test:
     ./.cargo-husky/hooks/pre-push
 
-# Run Miri test
-miri:
-    cargo +nightly miri test
-
 # Run benchmarks
 bench:
     cargo bench -p bench
     open target/criterion/DupIndexer/report/index.html
+
+# Run Miri test
+miri:
+    cargo +nightly miri test
