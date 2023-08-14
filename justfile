@@ -3,6 +3,11 @@
 @_default:
     just --list --unsorted
 
+# Clean all build artifacts
+clean:
+    cargo clean
+    rm -f Cargo.lock
+
 # Run cargo fmt and cargo clippy
 lint: fmt clippy
 
