@@ -10,48 +10,58 @@ Create a non-duplicated vector of values without extra memory allocations, even 
 
 This approach is useful for creating a vector of unique values, such as a list of unique strings, or a list of unique objects, and then using the index of the value in the vector as a unique identifier, e.g. in a protobuf message.
 
+There are two objects in this crate:
+* `DupIndexer<T>` - use `insert(value: T)` to add values, where `value` ownership is moved into the indexer on each call. This is good for when the value is no longer needed after insertion, or for values implementing `Copy`.
+* `DupIndexerRefs<T: Deref>` - use `insert_owned(value: T)`  and/or `insert_ref(value: &T::Target)`, to either insert with ownership transfer (just like `DupIndexer`), or to insert by reference, and only clone the value if it does not already exist in the index. This only works for `String/&str` pair, or can be implemented for custom types.
+
 ## Example
 
 ```rust
-use dup_indexer::DupIndexer;
+use dup_indexer::{DupIndexer, DupIndexerRefs};
 
 fn main() {
-    // with strings
-    let mut di = DupIndexer::new();
-    assert_eq!(di.insert("hello".to_string()), 0);
-    assert_eq!(di.insert("world".to_string()), 1);
-    assert_eq!(di.insert("hello".to_string()), 0);
-    assert_eq!(di.into_vec(), vec!["hello", "world"]);
+  let mut di = DupIndexerRefs::new();
+  assert_eq!(di.insert_owned("hello".to_string()), 0);
+  assert_eq!(di.insert_ref("world"), 1);
+  assert_eq!(di.insert_ref("hello"), 0);
+  assert_eq!(di.into_vec(), vec!["hello", "world"]);
+  
+  // with strings
+  let mut di = DupIndexer::new();
+  assert_eq!(di.insert("hello".to_string()), 0);
+  assert_eq!(di.insert("world".to_string()), 1);
+  assert_eq!(di.insert("hello".to_string()), 0);
+  assert_eq!(di.into_vec(), vec!["hello", "world"]);
 
-    // with i32
-    let mut di = DupIndexer::with_capacity(10);
-    assert_eq!(di.insert(42), 0);
-    assert_eq!(di.insert(13), 1);
-    assert_eq!(di.insert(42), 0);
-    assert_eq!(di[1], 13); // use it as a read-only vector
-    assert_eq!(di.into_iter().collect::<Vec<_>>(), vec![42, 13]);
+  // with i32
+  let mut di = DupIndexer::with_capacity(10);
+  assert_eq!(di.insert(42), 0);
+  assert_eq!(di.insert(13), 1);
+  assert_eq!(di.insert(42), 0);
+  assert_eq!(di[1], 13); // use it as a read-only vector
+  assert_eq!(di.into_iter().collect::<Vec<_>>(), vec![42, 13]);
 
-    //
-    // with custom enum
-    //
-    #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-    enum Value {
-        Str(String),
-        Int(i32),
-    }
-    
-    // All values inside the Value enum implement PtrRead
-    unsafe impl dup_indexer::PtrRead for Value {}
-    
-    let mut di: DupIndexer<Value> = DupIndexer::new();
-    assert_eq!(di.insert(Value::Str("foo".to_string())), 0);
-    assert_eq!(di.insert(Value::Int(42)), 1);
-    assert_eq!(di.insert(Value::Str("foo".to_string())), 0);
-    assert_eq!(di[1], Value::Int(42));
-    assert_eq!(
-        di.into_vec(),
-        vec![Value::Str("foo".to_string()), Value::Int(42)]
-    );
+  //
+  // with custom enum
+  //
+  #[derive(Debug, Eq, PartialEq, Hash, Clone)]
+  enum Value {
+    Str(String),
+    Int(i32),
+  }
+
+  // All values inside the Value enum implement PtrRead
+  unsafe impl dup_indexer::PtrRead for Value {}
+
+  let mut di: DupIndexer<Value> = DupIndexer::new();
+  assert_eq!(di.insert(Value::Str("foo".to_string())), 0);
+  assert_eq!(di.insert(Value::Int(42)), 1);
+  assert_eq!(di.insert(Value::Str("foo".to_string())), 0);
+  assert_eq!(di[1], Value::Int(42));
+  assert_eq!(
+    di.into_vec(),
+    vec![Value::Str("foo".to_string()), Value::Int(42)]
+  );
 }
 ```
 
@@ -91,9 +101,11 @@ impl<T: Hash + Eq + PtrRead> DupIndexer<T> {
 This way, the hashmap owns the shallow copy, and the vector owns the original value. On subsequent calls, the new value is checked against the hashmap for duplicates. Once finished, the vector with the keys is consumed by the user with `.into_vec()`, and the hashmap is dropped without dropping the actual keys.
 
 ### Safety
-I believe the above code is safe because the hashmap only keeps the `ptr:read`-created copy of the original value while we own it, and the value is never modified.  Some types like `Box` might be a bit trickier, so for safety /  to keep Miri happy this lib has an unsafe `PtrRead` marker trait that most basic types implement.
+The `DupIndexerRefs` assumes it is safe because the result of a `String` dereferencing (`&str`) is valid as long as the `String` itself is not modified, even if the `String` objects are stored in a `Vec<String>` which may be resized.
 
-Miri passes all tests for which there is a PtrRead, but fails if `T` is a `Box<i32>`. When the test tries to insert a duplicate value, I see the following Miri warning. Do let me know if you know if this is really an issue and how to fix this.
+Similarly, `DupIndexer` is safe because the hashmap only keeps the `ptr:read`-created copy of the original value while we own it, and the value is never modified.  Some types like `Box` might be a bit trickier, so for safety /  to keep Miri happy this lib has an unsafe `PtrRead` marker trait that most basic types implement.
+
+Miri passes all tests, but fails if `T` is a `Box<i32>`. When the test tries to insert a duplicate value, I see the following Miri warning. Do let me know if you know if this is really an issue and how to fix this.
 
 ```text
 ❯ cargo +nightly miri test

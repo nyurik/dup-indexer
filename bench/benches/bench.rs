@@ -2,7 +2,7 @@ use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::HashMap;
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use dup_indexer::DupIndexer;
+use dup_indexer::{DupIndexer, DupIndexerRefs};
 
 #[derive(Default)]
 pub struct DupIndexerRaw {
@@ -28,7 +28,7 @@ impl DupIndexerRaw {
     }
 }
 
-fn benchmark(c: &mut Criterion) {
+fn dup_indexer(c: &mut Criterion) {
     let mut group = c.benchmark_group("DupIndexer");
 
     group.bench_function("i32-baseline", |b| {
@@ -80,5 +80,34 @@ fn benchmark(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, benchmark);
+fn dup_gen_indexer(c: &mut Criterion) {
+    let mut group = c.benchmark_group("DupGenIndexer");
+
+    group.bench_function("String", |b| {
+        b.iter(|| {
+            let mut di = DupIndexerRefs::new();
+            for _ in 0..100 {
+                for val in 0..100 {
+                    black_box(di.insert_owned(val.to_string()));
+                }
+            }
+            black_box(di.into_vec())
+        })
+    });
+
+    group.bench_function("str", |b| {
+        let values: Vec<String> = (0..100).map(|i| i.to_string()).collect();
+        b.iter(|| {
+            let mut di: DupIndexerRefs<String> = DupIndexerRefs::new();
+            for _ in 0..100 {
+                for val in 0_usize..100 {
+                    black_box(di.insert_ref(&values[val]));
+                }
+            }
+            black_box(di.into_vec())
+        })
+    });
+}
+
+criterion_group!(benches, dup_indexer, dup_gen_indexer);
 criterion_main!(benches);
