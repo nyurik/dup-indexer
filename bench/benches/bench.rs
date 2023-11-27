@@ -100,8 +100,8 @@ fn dup_gen_indexer(c: &mut Criterion) {
         b.iter(|| {
             let mut di: DupIndexerRefs<String> = DupIndexerRefs::new();
             for _ in 0..100 {
-                for val in 0_usize..100 {
-                    black_box(di.insert_ref(&values[val]));
+                for val in &values {
+                    black_box(di.insert_ref(val));
                 }
             }
             black_box(di.into_vec())

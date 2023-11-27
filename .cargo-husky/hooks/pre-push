@@ -14,7 +14,7 @@ set -ex
 rustc --version
 cargo --version
 cargo fmt --all -- --check
-cargo clippy -- -D warnings
+cargo clippy --workspace --all-targets --bins --tests --lib --benches -- -D warnings
 cargo build
 cargo test --workspace --all-targets --bins --tests --lib --benches
 cargo test --doc

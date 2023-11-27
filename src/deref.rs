@@ -41,6 +41,7 @@ where
     T::Target: Eq + Hash + ToOwned<Owned = T>,
 {
     /// Constructs a new, empty `DupGenIndexer`
+    #[must_use]
     pub fn new() -> Self {
         Self {
             values: Vec::new(),
@@ -49,6 +50,7 @@ where
     }
 
     /// Constructs a new, empty `DupGenIndexer` with at least the specified capacity.
+    #[must_use]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             values: Vec::with_capacity(capacity),
@@ -58,30 +60,35 @@ where
 
     /// Returns the total number of elements the indexer can hold without reallocating.
     #[inline]
+    #[must_use]
     pub fn capacity(&self) -> usize {
         self.values.capacity()
     }
 
     /// Extracts a slice containing the entire indexer values.
     #[inline]
+    #[must_use]
     pub fn as_slice(&self) -> &[T] {
         self
     }
 
     /// Get the number of values in the indexer.
     #[inline]
+    #[must_use]
     pub fn len(&self) -> usize {
         self.values.len()
     }
 
     /// Return true if the indexer is empty.
     #[inline]
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.values.is_empty()
     }
 
     /// Converts the indexer into a vector.
     #[inline]
+    #[must_use]
     pub fn into_vec(self) -> Vec<T> {
         self.values
     }
