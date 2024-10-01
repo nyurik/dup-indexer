@@ -2,11 +2,11 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
   release:
-    types: [published]
+    types: [ published ]
   workflow_dispatch:
 
 jobs:
@@ -14,27 +14,24 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
+      - uses: taiki-e/install-action@v2
+        with: { tool: just }
       - name: Checkout
-        uses: actions/checkout@v3
-      - run: |
-            export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
-            source .cargo-husky/hooks/pre-push
+        uses: actions/checkout@v4
+      - run: just ci-test
 
   miri:
     name: Miri Test
     runs-on: ubuntu-latest
     steps:
+      - uses: taiki-e/install-action@v2
+        with: { tool: just }
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install miri
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
           components: miri
           override: true
-      - run: |
-            export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
-            set -ex
-            rustc --version
-            cargo --version
-            cargo miri test
+      - run: just miri

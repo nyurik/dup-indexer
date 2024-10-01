@@ -11,9 +11,7 @@ categories = ["algorithms", "data-structures"]
 rust-version = "1.60.0"
 
 [dependencies]
-
 [dev-dependencies]
-cargo-husky = { version = "1", features = ["user-hooks"], default-features = false }
 
 [lints.rust]
 unused_qualifications = "warn"
