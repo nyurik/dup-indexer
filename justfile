@@ -8,36 +8,52 @@ clean:
     cargo clean
     rm -f Cargo.lock
 
-# Update dependencies, including breaking changes
+# Update all dependencies, including breaking changes. Requires nightly toolchain (install with `rustup install nightly`)
 update:
     cargo +nightly -Z unstable-options update --breaking
     cargo update
 
+# Find unused dependencies. Install it with `cargo install cargo-udeps`
+udeps:
+    cargo +nightly udeps --all-targets --workspace --all-features
+
+# Check semver compatibility with prior published version. Install it with `cargo install cargo-semver-checks`
+semver *ARGS:
+    cargo semver-checks {{ARGS}}
+
 # Find the minimum supported Rust version (MSRV) using cargo-msrv extension, and update Cargo.toml
 msrv:
-    cargo msrv find --write-msrv -- cargo check --all-targets --workspace
+    cargo msrv find --write-msrv --ignore-lockfile -- cargo check --all-targets
 
 build:
-    cargo build --all-targets
+    cargo build --workspace --all-targets
 
-# Run cargo clippy
+# Run cargo clippy to lint the code
 clippy:
-    cargo clippy --all-targets -- -D warnings
-    cargo clippy --all-targets --all-features -- -D warnings
+    cargo clippy --workspace --all-targets -- -D warnings
+    cargo clippy --workspace --all-targets --all-features -- -D warnings
 
 # Test code formatting
 test-fmt:
     cargo fmt --all -- --check
 
-# Run cargo fmt
+# Reformat all code `cargo fmt`. If nightly is available, use it for better results
 fmt:
-    cargo +nightly fmt -- --config imports_granularity=Module,group_imports=StdExternalCrate
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if command -v cargo +nightly &> /dev/null; then
+        echo 'Reformatting Rust code using nightly Rust fmt to sort imports'
+        cargo +nightly fmt --all -- --config imports_granularity=Module,group_imports=StdExternalCrate
+    else
+        echo 'Reformatting Rust with the stable cargo fmt.  Install nightly with `rustup install nightly` for better results'
+        cargo fmt --all
+    fi
 
 # Build and open code documentation
 docs:
     cargo doc --no-deps --open
 
-# Quick compile
+# Quick compile without building a binary
 check:
     RUSTFLAGS='-D warnings' cargo check --workspace --all-targets
 
@@ -45,20 +61,31 @@ check:
 check-msrv:
     RUSTFLAGS='-D warnings' cargo check --all-targets
 
+# Generate code coverage report
+coverage *ARGS="--no-clean --open":
+    cargo llvm-cov --workspace --all-targets --include-build-script {{ARGS}}
+
+# Generate code coverage report to upload to codecov.io
+ci-coverage: && \
+            (coverage '--codecov --output-path target/llvm-cov/codecov.info')
+    # ATTENTION: the full file path above is used in the CI workflow
+    mkdir -p target/llvm-cov
+
 # Run all tests
 test:
     RUSTFLAGS='-D warnings' cargo test --workspace --all-targets
 
-# Run all tests
+# Run all tests for MSRV
 test-msrv:
     RUSTFLAGS='-D warnings' cargo test --all-targets
 
 # Test documentation
 test-doc:
-    RUSTFLAGS='-D warnings' cargo test --doc
+    RUSTDOCFLAGS="-D warnings" cargo test --doc
     RUSTDOCFLAGS="-D warnings" cargo doc --no-deps
 
-rust-info:
+# Print Rust version information
+@rust-info:
     rustc --version
     cargo --version
 

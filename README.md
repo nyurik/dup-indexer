@@ -5,6 +5,7 @@
 [![docs.rs docs](https://docs.rs/dup-indexer/badge.svg)](https://docs.rs/dup-indexer)
 [![crates.io version](https://img.shields.io/crates/l/dup-indexer.svg)](https://github.com/nyurik/dup-indexer/blob/main/LICENSE-APACHE)
 [![CI build](https://github.com/nyurik/dup-indexer/workflows/CI/badge.svg)](https://github.com/nyurik/dup-indexer/actions)
+[![Codecov](https://img.shields.io/codecov/c/github/nyurik/dup-indexer)](https://app.codecov.io/gh/nyurik/dup-indexer)
 
 Create a non-duplicated vector of values without extra memory allocations, even for ref values like `String` and
 `Vec`. Each insertion returns the `usize` index of the inserted value. When done, the entire vector can be used.
@@ -153,12 +154,10 @@ help: <170684> was later invalidated at offsets [0x0..0x4] by a Unique retag
 
 ## Development
 
-* This project is easier to develop with [just](https://github.com/casey/just#readme), a modern alternative to
-  `make`. Install it with `cargo install just`.
+* This project is easier to develop with [just](https://github.com/casey/just#readme), a modern alternative to `make`.
+  Install it with `cargo install just`.
 * To get a list of available commands, run `just`.
 * To run tests, use `just test`.
-* On `git push`, it will run a few validations, including `cargo fmt`, `cargo clippy`, and `cargo test`. Use
-  `git push --no-verify` to skip these checks.
 * To run benchmarks, use `just bench`.
 * To test with Miri, use `just miri` (note that one of the tests is disabled due to the above issue).
 
