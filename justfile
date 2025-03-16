@@ -23,7 +23,7 @@ semver *ARGS:
 
 # Find the minimum supported Rust version (MSRV) using cargo-msrv extension, and update Cargo.toml
 msrv:
-    cargo msrv find --write-msrv --ignore-lockfile -- cargo check --all-targets
+    cargo msrv find --write-msrv --ignore-lockfile -- just ci-test-msrv
 
 build:
     cargo build --workspace --all-targets
