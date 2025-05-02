@@ -1,5 +1,7 @@
 #!/usr/bin/env just --justfile
 
+CRATE_NAME := "dup-indexer"
+
 @_default:
     just --list
 
@@ -24,6 +26,13 @@ semver *ARGS:
 # Find the minimum supported Rust version (MSRV) using cargo-msrv extension, and update Cargo.toml
 msrv:
     cargo msrv find --write-msrv --ignore-lockfile -- just ci-test-msrv
+
+# Get the minimum supported Rust version (MSRV) for the crate
+get-msrv: (get-crate-field "rust_version" CRATE_NAME)
+
+# Get any package's field from the metadata
+get-crate-field field package=CRATE_NAME:
+    cargo metadata --format-version 1 | jq -r '.packages | map(select(.name == "{{package}}")) | first | .{{field}}'
 
 build:
     cargo build --workspace --all-targets
@@ -104,12 +113,20 @@ bench:
 miri: rust-info
     RUSTFLAGS='-D warnings' cargo +nightly miri test
 
+# Check if a certain Cargo command is installed, and install it if needed
+[private]
+cargo-install $COMMAND $INSTALL_CMD="" *ARGS="":
+    @if ! command -v $COMMAND > /dev/null; then \
+        echo "$COMMAND could not be found. Installing it with    cargo install ${INSTALL_CMD:-$COMMAND} {{ARGS}}" ;\
+        cargo install ${INSTALL_CMD:-$COMMAND} {{ARGS}} ;\
+    fi
+
 # Verify that the current version of the crate is not the same as the one published on crates.io
 check-if-published:
     #!/usr/bin/env bash
-    LOCAL_VERSION="$(grep '^version =' Cargo.toml | sed -E 's/version = "([^"]*)".*/\1/')"
+    LOCAL_VERSION="$({{just_executable()}} get-crate-field version)"
     echo "Detected crate version:  $LOCAL_VERSION"
-    CRATE_NAME="$(grep '^name =' Cargo.toml | head -1 | sed -E 's/name = "(.*)"/\1/')"
+    CRATE_NAME="$({{just_executable()}} get-crate-field name)"
     echo "Detected crate name:     $CRATE_NAME"
     PUBLISHED_VERSION="$(cargo search ${CRATE_NAME} | grep "^${CRATE_NAME} =" | sed -E 's/.* = "(.*)".*/\1/')"
     echo "Published crate version: $PUBLISHED_VERSION"
