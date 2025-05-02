@@ -1,9 +1,3 @@
-[workspace]
-# Use `just bench` or `cargo bench -p bench` to run the benchmarks.
-resolver = "2"
-members = [".", "bench"]
-default-members = ["."]
-
 [package]
 name = "dup-indexer"
 version = "0.4.2"
@@ -16,9 +10,19 @@ keywords = ["index", "string", "intern", "duplicate", "unique"]
 categories = ["algorithms", "data-structures"]
 rust-version = "1.60"
 
-[lints.rust]
+[lints]
+workspace = true
+
+[workspace]
+# Use `just bench` or `cargo bench -p bench` to run the benchmarks.
+resolver = "2"
+members = [".", "bench"]
+default-members = ["."]
+
+[workspace.lints.rust]
 unused_qualifications = "warn"
 
-[lints.clippy]
+[workspace.lints.clippy]
+cargo = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
 explicit_deref_methods = "allow"
