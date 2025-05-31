@@ -37,10 +37,6 @@ check-if-published:
 check-msrv:
     RUSTFLAGS='-D warnings' cargo check --all-targets
 
-# Generate code coverage report
-coverage *ARGS="--no-clean --open":
-    cargo llvm-cov --workspace --all-targets --include-build-script {{ARGS}}
-
 # Generate code coverage report to upload to codecov.io
 ci-coverage: && \
             (coverage '--codecov --output-path target/llvm-cov/codecov.info')
@@ -62,6 +58,10 @@ clean:
 clippy:
     cargo clippy --workspace --all-targets -- -D warnings
     cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+# Generate code coverage report
+coverage *ARGS="--no-clean --open":
+    cargo llvm-cov --workspace --all-targets --include-build-script {{ARGS}}
 
 # Build and open code documentation
 docs:
@@ -89,14 +89,6 @@ get-msrv: (get-crate-field "rust_version" CRATE_NAME)
 # Run Miri test
 miri: rust-info
     RUSTFLAGS='-D warnings' cargo +nightly miri test
-
-# Check if a certain Cargo command is installed, and install it if needed
-[private]
-cargo-install $COMMAND $INSTALL_CMD="" *ARGS="":
-    @if ! command -v $COMMAND > /dev/null; then \
-        echo "$COMMAND could not be found. Installing it with    cargo install ${INSTALL_CMD:-$COMMAND} {{ARGS}}" ;\
-        cargo install ${INSTALL_CMD:-$COMMAND} {{ARGS}} ;\
-    fi
 
 # Find the minimum supported Rust version (MSRV) using cargo-msrv extension, and update Cargo.toml
 msrv:
@@ -136,3 +128,11 @@ udeps:
 update:
     cargo +nightly -Z unstable-options update --breaking
     cargo update
+
+# Check if a certain Cargo command is installed, and install it if needed
+[private]
+cargo-install $COMMAND $INSTALL_CMD="" *ARGS="":
+    @if ! command -v $COMMAND > /dev/null; then \
+        echo "$COMMAND could not be found. Installing it with    cargo install ${INSTALL_CMD:-$COMMAND} {{ARGS}}" ;\
+        cargo install ${INSTALL_CMD:-$COMMAND} {{ARGS}} ;\
+    fi
