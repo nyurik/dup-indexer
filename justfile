@@ -119,7 +119,7 @@ semver *args:  (cargo-install 'cargo-semver-checks')
 # Run all tests
 test:
     cargo test --workspace --all-targets {{features_flag}}
-    cargo test --doc {{features_flag}}
+    cargo test --workspace --doc {{features_flag}}
 
 # Test documentation generation
 test-doc: (docs '')
@@ -130,7 +130,7 @@ test-fmt:
 
 # Run all tests for MSRV
 test-msrv:
-    cargo test --all-targets
+    cargo test --workspace --all-targets
 
 # Find unused dependencies. Install it with `cargo install cargo-udeps`
 udeps:  (cargo-install 'cargo-udeps')
