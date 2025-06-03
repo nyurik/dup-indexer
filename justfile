@@ -130,7 +130,7 @@ test-fmt:
 
 # Run all tests for MSRV
 test-msrv:
-    cargo test --workspace --all-targets
+    cargo test --workspace
 
 # Find unused dependencies. Install it with `cargo install cargo-udeps`
 udeps:  (cargo-install 'cargo-udeps')
