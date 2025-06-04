@@ -4,7 +4,7 @@
 [![crates.io version](https://img.shields.io/crates/v/dup-indexer.svg)](https://crates.io/crates/dup-indexer)
 [![docs.rs docs](https://docs.rs/dup-indexer/badge.svg)](https://docs.rs/dup-indexer)
 [![crates.io version](https://img.shields.io/crates/l/dup-indexer.svg)](https://github.com/nyurik/dup-indexer/blob/main/LICENSE-APACHE)
-[![CI build](https://github.com/nyurik/dup-indexer/workflows/CI/badge.svg)](https://github.com/nyurik/dup-indexer/actions)
+[![CI build](https://github.com/nyurik/dup-indexer/actions/workflows/ci.yml/badge.svg)](https://github.com/nyurik/dup-indexer/actions)
 [![Codecov](https://img.shields.io/codecov/c/github/nyurik/dup-indexer)](https://app.codecov.io/gh/nyurik/dup-indexer)
 
 Create a non-duplicated vector of values without extra memory allocations, even for ref values like `String` and
