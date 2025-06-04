@@ -1,10 +1,10 @@
 # Dup-Indexer
 
-[![GitHub](https://img.shields.io/badge/github-dup--indexer-8da0cb?logo=github)](https://github.com/nyurik/dup-indexer)
-[![crates.io version](https://img.shields.io/crates/v/dup-indexer.svg)](https://crates.io/crates/dup-indexer)
-[![docs.rs docs](https://docs.rs/dup-indexer/badge.svg)](https://docs.rs/dup-indexer)
-[![crates.io version](https://img.shields.io/crates/l/dup-indexer.svg)](https://github.com/nyurik/dup-indexer/blob/main/LICENSE-APACHE)
-[![CI build](https://github.com/nyurik/dup-indexer/workflows/CI/badge.svg)](https://github.com/nyurik/dup-indexer/actions)
+[![GitHub repo](https://img.shields.io/badge/github-dup--indexer-8da0cb?logo=github)](https://github.com/nyurik/dup-indexer)
+[![crates.io version](https://img.shields.io/crates/v/dup-indexer)](https://crates.io/crates/dup-indexer)
+[![docs.rs status](https://img.shields.io/docsrs/dup-indexer)](https://docs.rs/dup-indexer)
+[![crates.io license](https://img.shields.io/crates/l/dup-indexer)](https://github.com/nyurik/dup-indexer/blob/main/LICENSE-APACHE)
+[![CI build status](https://github.com/nyurik/dup-indexer/actions/workflows/ci.yml/badge.svg)](https://github.com/nyurik/dup-indexer/actions)
 [![Codecov](https://img.shields.io/codecov/c/github/nyurik/dup-indexer)](https://app.codecov.io/gh/nyurik/dup-indexer)
 
 Create a non-duplicated vector of values without extra memory allocations, even for ref values like `String` and
