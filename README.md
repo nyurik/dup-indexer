@@ -2,6 +2,7 @@
 
 [![GitHub repo](https://img.shields.io/badge/github-dup--indexer-8da0cb?logo=github)](https://github.com/nyurik/dup-indexer)
 [![crates.io version](https://img.shields.io/crates/v/dup-indexer)](https://crates.io/crates/dup-indexer)
+[![crate usage](https://img.shields.io/crates/d/dup-indexer)](https://crates.io/crates/dup-indexer)
 [![docs.rs status](https://img.shields.io/docsrs/dup-indexer)](https://docs.rs/dup-indexer)
 [![crates.io license](https://img.shields.io/crates/l/dup-indexer)](https://github.com/nyurik/dup-indexer/blob/main/LICENSE-APACHE)
 [![CI build status](https://github.com/nyurik/dup-indexer/actions/workflows/ci.yml/badge.svg)](https://github.com/nyurik/dup-indexer/actions)
