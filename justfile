@@ -106,7 +106,7 @@ miri: env-info
 
 # Find the minimum supported Rust version (MSRV) using cargo-msrv extension, and update Cargo.toml
 msrv:  (cargo-install 'cargo-msrv')
-    cargo msrv find --write-msrv --ignore-lockfile -- just ci-test-msrv
+    cargo msrv find --write-msrv --ignore-lockfile -- {{just_executable()}} ci-test-msrv
 
 # Run cargo-release
 release *args='':  (cargo-install 'release-plz')
