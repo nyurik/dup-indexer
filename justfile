@@ -1,7 +1,9 @@
 #!/usr/bin/env just --justfile
 
-main_crate := 'dup-indexer'
-features_flag := '--all-features'
+main_crate := file_name(justfile_directory())
+packages := '--workspace'  # All crates in the workspace
+features := '--all-features'  # Enable all features
+targets := '--all-targets'  # For all targets (lib, bin, tests, examples, benches)
 
 # if running in CI, treat warnings as errors by setting RUSTFLAGS and RUSTDOCFLAGS to '-D warnings' unless they are already set
 # Use `CI=true just ci-test` to run the same tests as in GitHub CI.
@@ -24,15 +26,15 @@ bench:
 
 # Build the project
 build:
-    cargo build --workspace --all-targets {{features_flag}}
+    cargo build {{packages}} {{features}} {{targets}}
 
 # Quick compile without building a binary
 check:
-    cargo check --workspace --all-targets {{features_flag}}
+    cargo check {{packages}} {{features}} {{targets}}
 
 # Quick compile for MSRV, without compiling benches
 check-msrv:
-    cargo check --all-targets
+    cargo check {{targets}}
 
 # Generate code coverage report to upload to codecov.io
 ci-coverage: env-info && \
@@ -53,19 +55,19 @@ clean:
 
 # Run cargo clippy to lint the code
 clippy *args:
-    cargo clippy --workspace --all-targets {{features_flag}} {{args}}
+    cargo clippy {{packages}} {{features}} {{targets}} {{args}}
 
 # Generate code coverage report. Will install `cargo llvm-cov` if missing.
 coverage *args='--no-clean --open':  (cargo-install 'cargo-llvm-cov')
-    cargo llvm-cov --workspace --all-targets {{features_flag}} --include-build-script {{args}}
+    cargo llvm-cov {{packages}} {{features}} {{targets}} --include-build-script {{args}}
 
 # Build and open code documentation
 docs *args='--open':
-    DOCS_RS=1 cargo doc --no-deps {{args}} --workspace {{features_flag}}
+    DOCS_RS=1 cargo doc --no-deps {{args}} {{packages}} {{features}}
 
 # Print environment info
 env-info:
-    @echo "Running {{if ci_mode == '1' {'in CI mode'} else {'in dev mode'} }} on {{os()}} / {{arch()}}"
+    @echo "Running for '{{main_crate}}' crate {{if ci_mode == '1' {'in CI mode'} else {'in dev mode'} }} on {{os()}} / {{arch()}}"
     @echo "PWD $(pwd)"
     {{just_executable()}} --version
     rustc --version
@@ -89,7 +91,7 @@ fmt:
 
 # Reformat all Cargo.toml files using cargo-sort
 fmt-toml *args:  (cargo-install 'cargo-sort')
-    cargo sort --workspace --grouped {{args}}
+    cargo sort {{packages}} --grouped {{args}}
 
 # Get any package's field from the metadata
 get-crate-field field package=main_crate:  (assert-cmd 'jq')
@@ -112,12 +114,12 @@ release *args='':  (cargo-install 'release-plz')
 
 # Check semver compatibility with prior published version. Install it with `cargo install cargo-semver-checks`
 semver *args:  (cargo-install 'cargo-semver-checks')
-    cargo semver-checks {{features_flag}} {{args}}
+    cargo semver-checks {{features}} {{args}}
 
 # Run all tests
 test:
-    cargo test --workspace --all-targets {{features_flag}}
-    cargo test --workspace --doc {{features_flag}}
+    cargo test {{packages}} {{features}} {{targets}}
+    cargo test --doc {{packages}} {{features}}
 
 # Test documentation generation
 test-doc:  (docs '')
@@ -128,11 +130,11 @@ test-fmt: && (fmt-toml '--check' '--check-format')
 
 # Run all tests for MSRV
 test-msrv:
-    cargo test --workspace
+    cargo test {{packages}}
 
 # Find unused dependencies. Install it with `cargo install cargo-udeps`
 udeps:  (cargo-install 'cargo-udeps')
-    cargo +nightly udeps --workspace --all-targets {{features_flag}}
+    cargo +nightly udeps {{packages}} {{features}} {{targets}}
 
 # Update all dependencies, including breaking changes. Requires nightly toolchain (install with `rustup install nightly`)
 update:
