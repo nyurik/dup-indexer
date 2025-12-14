@@ -1,6 +1,6 @@
 #!/usr/bin/env just --justfile
 
-# Define the name of the main crate based
+# Define the name of the main crate based on the directory name
 main_crate := file_name(justfile_directory())
 # How to call the current just executable. Note that just_executable() may have `\` in Windows paths, so we need to quote it.
 just := quote(just_executable())
@@ -31,10 +31,6 @@ build:
 check:
     cargo check --workspace --all-features --all-targets
 
-# Quick compile for MSRV, without compiling benches
-check-msrv:
-    cargo check --all-targets
-
 # Generate code coverage report to upload to codecov.io
 ci-coverage: env-info && \
             (coverage '--codecov --output-path target/llvm-cov/codecov.info')
@@ -45,7 +41,8 @@ ci-coverage: env-info && \
 ci-test: env-info test-fmt clippy check test test-doc && assert-git-is-clean
 
 # Run minimal subset of tests to ensure compatibility with MSRV
-ci-test-msrv: env-info check-msrv test-msrv
+ci-test-msrv: env-info
+    cargo check --all-features --package {{main_crate}}
 
 # Clean all build artifacts
 clean:
@@ -127,10 +124,6 @@ test-doc:  (docs '')
 test-fmt: && (fmt-toml '--check' '--check-format')
     cargo fmt --all -- --check
 
-# Run all tests for MSRV
-test-msrv:
-    cargo test --workspace
-
 # Find unused dependencies. Uses `cargo-udeps`
 udeps:  (cargo-install 'cargo-udeps')
     cargo +nightly udeps --workspace --all-features --all-targets
@@ -152,11 +145,11 @@ assert-cmd command:
 [private]
 assert-git-is-clean:
     @if [ -n "$(git status --untracked-files --porcelain)" ]; then \
-      >&2 echo "ERROR: git repo is no longer clean. Make sure compilation and tests artifacts are in the .gitignore, and no repo files are modified." ;\
-      >&2 echo "######### git status ##########" ;\
-      git status ;\
-      git --no-pager diff ;\
-      exit 1 ;\
+        >&2 echo "ERROR: git repo is no longer clean. Make sure compilation and tests artifacts are in the .gitignore, and no repo files are modified." ;\
+        >&2 echo "######### git status ##########" ;\
+        git status ;\
+        git --no-pager diff ;\
+        exit 1 ;\
     fi
 
 # Check if a certain Cargo command is installed, and install it if needed
