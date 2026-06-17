@@ -38,3 +38,5 @@ repos:
     rev: 3.6.0
     hooks:
       - id: editorconfig-checker
+        exclude:
+          - README\.md
