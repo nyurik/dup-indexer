@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.5](https://github.com/nyurik/dup-indexer/compare/v0.4.4...v0.4.5) - 2026-06-18
+
+### Other
+
+- [pre-commit.ci] pre-commit autoupdate ([#27](https://github.com/nyurik/dup-indexer/pull/27))
+- .editorconfig, coverage and MSRV fixes ([#26](https://github.com/nyurik/dup-indexer/pull/26))
+- add .editorconfig
+- Bump actions/checkout from 5 to 6 in the all-actions-version-updates group ([#24](https://github.com/nyurik/dup-indexer/pull/24))
+- minor justfile adjustments
+- minor justfile adjustments
+
 ## [0.4.4](https://github.com/nyurik/dup-indexer/compare/v0.4.3...v0.4.4) - 2025-10-01
 
 ### Other
