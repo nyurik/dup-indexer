@@ -19,17 +19,17 @@ export RUST_BACKTRACE := env('RUST_BACKTRACE', if ci_mode == '1' {'1'} else {'0'
 @_default:
     {{just}} --list
 
-# Build the project
-build:
-    cargo build --workspace --all-features --all-targets
-
-# Run full Criterion benchmarks
+# Run benchmarks
 bench:
     cargo bench -p bench
 
 # Compile and smoke-test benchmarks quickly, suitable for CI
 bench-quick:
     cargo bench -p bench -- --test
+
+# Build the project
+build:
+    cargo build --workspace --all-features --all-targets
 
 # Quick compile without building a binary
 check:
@@ -149,7 +149,7 @@ test:
 test-doc:  (docs '')
 
 # Test code formatting
-test-fmt:
+test-fmt: && (fmt-toml '--check' '--check-format')
     cargo fmt --all -- --check
 
 # Find unused dependencies. Uses `cargo-udeps`

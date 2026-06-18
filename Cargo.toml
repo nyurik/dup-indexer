@@ -11,12 +11,15 @@ keywords = ["index", "string", "intern", "duplicate", "unique"]
 categories = ["algorithms", "data-structures"]
 rust-version = "1.60"
 
-[lints]
-workspace = true
-
 [features]
 default = ["foldhash"]
 foldhash = ["dep:foldhash"]
+
+[dependencies]
+foldhash = { version = "0.2.0", optional = true }
+
+[lints]
+workspace = true
 
 [workspace]
 # Use `just bench` or `cargo bench -p bench` to run the benchmarks.
@@ -36,6 +39,3 @@ unwrap_used = "warn"
 cargo = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
 explicit_deref_methods = "allow"
-
-[dependencies]
-foldhash = { version = "0.2.0", optional = true }
