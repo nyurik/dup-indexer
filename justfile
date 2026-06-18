@@ -46,8 +46,12 @@ ci-test: env-info test-fmt clippy check test bench-quick test-doc && assert-git-
 
 # Compile default features with minimal dependencies on the configured MSRV
 ci-test-msrv:
-    RUSTUP_TOOLCHAIN="$({{just}} get-msrv)" {{just}} ci_mode=0 env-info _check-msrv-default
+    {{just}} ci_mode=0 env-info _check-msrv-default
     {{just}} assert-git-is-clean
+
+# Set toolchain and run ci-test-msrv
+ci-test-msrv-with-toolchain:
+    RUSTUP_TOOLCHAIN="$({{just}} get-msrv)" {{just}} ci-test-msrv
 
 # Clean all build artifacts
 clean:
