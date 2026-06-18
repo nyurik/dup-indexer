@@ -34,6 +34,7 @@ bench-quick:
 # Quick compile without building a binary
 check:
     cargo check --workspace --all-features --all-targets
+    cargo check --workspace --no-default-features --all-targets
 
 # Generate LCOV coverage report for CI to upload to codecov.io
 ci-coverage: env-info && \
@@ -140,6 +141,7 @@ semver *args:  (cargo-install 'cargo-semver-checks')
 # Run all tests
 test:
     cargo test --workspace --all-features --all-targets
+    cargo test --workspace --no-default-features --all-targets
     cargo test --doc --workspace --all-features
 
 # Test documentation generation

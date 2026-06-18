@@ -1,7 +1,7 @@
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fmt::{Debug, Formatter};
-use std::hash::Hash;
+use std::hash::{BuildHasher, Hash};
 use std::mem::ManuallyDrop;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::num::{
@@ -12,6 +12,8 @@ use std::ops::{Deref, Index};
 use std::path::PathBuf;
 use std::ptr;
 use std::time::{Duration, SystemTime};
+
+use crate::DefaultHashBuilder;
 
 /// A value that can be used as a key in a [`DupIndexer`], which will copy its content
 /// using the [`ptr::read`] function, while also owning it internally.
@@ -48,9 +50,9 @@ unsafe impl<T: PtrRead, V: PtrRead, S> PtrRead for HashMap<T, V, S> {}
 unsafe impl<T: PtrRead, V: PtrRead> PtrRead for BTreeMap<T, V> {}
 unsafe impl<T: PtrRead> PtrRead for BTreeSet<T> {}
 
-pub struct DupIndexer<T> {
+pub struct DupIndexer<T, S = DefaultHashBuilder> {
     values: Vec<T>,
-    lookup: HashMap<ManuallyDrop<T>, usize>,
+    lookup: HashMap<ManuallyDrop<T>, usize, S>,
 }
 
 impl<T: PtrRead> DupIndexer<T> {
@@ -59,7 +61,7 @@ impl<T: PtrRead> DupIndexer<T> {
     pub fn new() -> Self {
         Self {
             values: Vec::new(),
-            lookup: HashMap::new(),
+            lookup: HashMap::with_hasher(DefaultHashBuilder::default()),
         }
     }
 
@@ -68,7 +70,28 @@ impl<T: PtrRead> DupIndexer<T> {
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             values: Vec::with_capacity(capacity),
-            lookup: HashMap::with_capacity(capacity),
+            lookup: HashMap::with_capacity_and_hasher(capacity, DefaultHashBuilder::default()),
+        }
+    }
+}
+
+impl<T: PtrRead, S: BuildHasher> DupIndexer<T, S> {
+    /// Create a new instance of `DupIndexer<T>` using the provided hasher.
+    #[must_use]
+    pub fn with_hasher(hasher: S) -> Self {
+        Self {
+            values: Vec::new(),
+            lookup: HashMap::with_hasher(hasher),
+        }
+    }
+
+    /// Constructs a new, empty `DupIndexer<T>` with at least the specified capacity
+    /// using the provided hasher.
+    #[must_use]
+    pub fn with_capacity_and_hasher(capacity: usize, hasher: S) -> Self {
+        Self {
+            values: Vec::with_capacity(capacity),
+            lookup: HashMap::with_capacity_and_hasher(capacity, hasher),
         }
     }
 
@@ -117,7 +140,7 @@ impl<T: PtrRead + Default> Default for DupIndexer<T> {
     }
 }
 
-impl<T: Eq + Hash> DupIndexer<T> {
+impl<T: Eq + Hash, S: BuildHasher> DupIndexer<T, S> {
     /// Insert a value into the indexer if it doesn't already exist,
     /// and return the index of the value.
     ///
@@ -148,7 +171,7 @@ impl<T: Eq + Hash> DupIndexer<T> {
     }
 }
 
-impl<T> Index<usize> for DupIndexer<T> {
+impl<T, S> Index<usize> for DupIndexer<T, S> {
     type Output = T;
 
     #[inline]
@@ -157,7 +180,7 @@ impl<T> Index<usize> for DupIndexer<T> {
     }
 }
 
-impl<T> IntoIterator for DupIndexer<T> {
+impl<T, S> IntoIterator for DupIndexer<T, S> {
     type Item = T;
     type IntoIter = std::vec::IntoIter<T>;
 
@@ -167,7 +190,7 @@ impl<T> IntoIterator for DupIndexer<T> {
     }
 }
 
-impl<T> Deref for DupIndexer<T> {
+impl<T, S> Deref for DupIndexer<T, S> {
     type Target = [T];
 
     #[inline]
@@ -176,7 +199,7 @@ impl<T> Deref for DupIndexer<T> {
     }
 }
 
-impl<T: Debug> Debug for DupIndexer<T> {
+impl<T: Debug, S> Debug for DupIndexer<T, S> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_map()
             .entries(self.values.iter().enumerate())

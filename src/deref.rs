@@ -1,8 +1,10 @@
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
-use std::hash::Hash;
+use std::hash::{BuildHasher, Hash};
 use std::ops::{Deref, Index};
+
+use crate::DefaultHashBuilder;
 
 /// A value that can be stably dereferenced with [`Deref`] trait.
 /// A stable dereference means that a reference to the value will be valid
@@ -17,12 +19,12 @@ pub unsafe trait StableDerefKey: Deref + Eq + Hash {}
 
 unsafe impl StableDerefKey for String {}
 
-pub struct DupIndexerRefs<T: StableDerefKey>
+pub struct DupIndexerRefs<T: StableDerefKey, S = DefaultHashBuilder>
 where
     <T as Deref>::Target: 'static,
 {
     values: Vec<T>,
-    lookup: HashMap<&'static T::Target, usize>,
+    lookup: HashMap<&'static T::Target, usize, S>,
 }
 
 impl<T> Default for DupIndexerRefs<T>
@@ -45,7 +47,7 @@ where
     pub fn new() -> Self {
         Self {
             values: Vec::new(),
-            lookup: HashMap::new(),
+            lookup: HashMap::with_hasher(DefaultHashBuilder::default()),
         }
     }
 
@@ -54,7 +56,33 @@ where
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             values: Vec::with_capacity(capacity),
-            lookup: HashMap::with_capacity(capacity),
+            lookup: HashMap::with_capacity_and_hasher(capacity, DefaultHashBuilder::default()),
+        }
+    }
+}
+
+impl<T, S> DupIndexerRefs<T, S>
+where
+    T: StableDerefKey,
+    T::Target: Eq + Hash + ToOwned<Owned = T>,
+    S: BuildHasher,
+{
+    /// Create a new instance of `DupIndexerRefs<T>` using the provided hasher.
+    #[must_use]
+    pub fn with_hasher(hasher: S) -> Self {
+        Self {
+            values: Vec::new(),
+            lookup: HashMap::with_hasher(hasher),
+        }
+    }
+
+    /// Constructs a new, empty `DupIndexerRefs<T>` with at least the specified
+    /// capacity using the provided hasher.
+    #[must_use]
+    pub fn with_capacity_and_hasher(capacity: usize, hasher: S) -> Self {
+        Self {
+            values: Vec::with_capacity(capacity),
+            lookup: HashMap::with_capacity_and_hasher(capacity, hasher),
         }
     }
 
@@ -148,7 +176,7 @@ where
     }
 }
 
-impl<T: StableDerefKey> Index<usize> for DupIndexerRefs<T> {
+impl<T: StableDerefKey, S> Index<usize> for DupIndexerRefs<T, S> {
     type Output = T;
 
     #[inline]
@@ -157,7 +185,7 @@ impl<T: StableDerefKey> Index<usize> for DupIndexerRefs<T> {
     }
 }
 
-impl<T: StableDerefKey> IntoIterator for DupIndexerRefs<T> {
+impl<T: StableDerefKey, S> IntoIterator for DupIndexerRefs<T, S> {
     type Item = T;
     type IntoIter = std::vec::IntoIter<T>;
 
@@ -167,7 +195,7 @@ impl<T: StableDerefKey> IntoIterator for DupIndexerRefs<T> {
     }
 }
 
-impl<T: StableDerefKey> Deref for DupIndexerRefs<T> {
+impl<T: StableDerefKey, S> Deref for DupIndexerRefs<T, S> {
     type Target = [T];
 
     #[inline]
@@ -176,7 +204,7 @@ impl<T: StableDerefKey> Deref for DupIndexerRefs<T> {
     }
 }
 
-impl<T: StableDerefKey + Debug> Debug for DupIndexerRefs<T> {
+impl<T: StableDerefKey + Debug, S> Debug for DupIndexerRefs<T, S> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_map()
             .entries(self.values.iter().enumerate())

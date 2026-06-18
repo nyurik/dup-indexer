@@ -78,6 +78,13 @@ assert_eq!(
 `HashMap<T, usize>` where `T` is the type of the inserted value. This means that the inserted values must implement
 `Hash` and `Eq`.
 
+With default features, the lookup maps use [`foldhash`](https://crates.io/crates/foldhash) instead of Rust's default
+hasher. This improves throughput for indexing trusted in-process data, but comes with the usual `foldhash` tradeoffs: it
+is not intended as a HashDoS-resistant hasher and should not be used when untrusted users can choose adversarial keys.
+Without the `foldhash` feature, the default hasher falls back to Rust's standard `HashMap` hasher.
+The hasher is a defaulted generic parameter, so callers can override it with `DupIndexer<T, S>` or
+`DupIndexerRefs<T, S>` and construct values with `with_hasher` or `with_capacity_and_hasher`.
+
 The value types like ints, floats, bools, chars and any references like
 `&str` cause no issues because they can be copied to both the vector and the lookup map containers. However, the non-copyable types with memory allocation like
 `String` and
@@ -88,12 +95,13 @@ The value types like ints, floats, bools, chars and any references like
 use std::collections::hash_map::{Entry, HashMap};
 use std::mem::ManuallyDrop;
 use std::hash::Hash;
+use dup_indexer::DefaultHashBuilder;
 
 pub unsafe trait PtrRead {}
 
-pub struct DupIndexer<T> {
+pub struct DupIndexer<T, S = DefaultHashBuilder> {
     values: Vec<T>,
-    lookup: HashMap<ManuallyDrop<T>, usize>,
+    lookup: HashMap<ManuallyDrop<T>, usize, S>,
 }
 
 impl<T: Hash + Eq + PtrRead> DupIndexer<T> {
