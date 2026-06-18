@@ -209,6 +209,8 @@ impl<T: Debug, S> Debug for DupIndexer<T, S> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::hash_map::RandomState;
+
     use super::*;
 
     #[test]
@@ -246,6 +248,22 @@ mod tests {
         assert_eq!(di.as_slice(), &["foo", "bar"]);
         assert_eq!(format!("{di:?}"), r#"{0: "foo", 1: "bar"}"#);
         assert_eq!(di.into_vec(), vec!["foo", "bar"]);
+    }
+
+    #[test]
+    fn test_custom_hasher() {
+        let mut di: DupIndexer<String, RandomState> = DupIndexer::with_hasher(RandomState::new());
+        assert_eq!(di.insert("foo".to_string()), 0);
+        assert_eq!(di.insert("bar".to_string()), 1);
+        assert_eq!(di.insert("foo".to_string()), 0);
+        assert_eq!(di.into_vec(), vec!["foo", "bar"]);
+
+        let mut di: DupIndexer<String, RandomState> =
+            DupIndexer::with_capacity_and_hasher(5, RandomState::new());
+        assert!(di.capacity() >= 5);
+        assert_eq!(di.insert("baz".to_string()), 0);
+        assert_eq!(di.insert("baz".to_string()), 0);
+        assert_eq!(di.into_vec(), vec!["baz"]);
     }
 
     #[test]

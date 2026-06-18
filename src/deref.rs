@@ -214,6 +214,8 @@ impl<T: StableDerefKey + Debug, S> Debug for DupIndexerRefs<T, S> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::hash_map::RandomState;
+
     use super::*;
 
     #[test]
@@ -242,6 +244,23 @@ mod tests {
         assert_eq!(di.insert_ref("bar"), 1);
         assert_eq!(di.insert_ref("foo"), 0);
         assert_eq!(di.into_vec(), vec!["foo", "bar"]);
+    }
+
+    #[test]
+    fn test_custom_hasher() {
+        let mut di: DupIndexerRefs<String, RandomState> =
+            DupIndexerRefs::with_hasher(RandomState::new());
+        assert_eq!(di.insert_owned("foo".to_string()), 0);
+        assert_eq!(di.insert_ref("bar"), 1);
+        assert_eq!(di.insert_ref("foo"), 0);
+        assert_eq!(di.into_vec(), vec!["foo", "bar"]);
+
+        let mut di: DupIndexerRefs<String, RandomState> =
+            DupIndexerRefs::with_capacity_and_hasher(5, RandomState::new());
+        assert!(di.capacity() >= 5);
+        assert_eq!(di.insert_ref("baz"), 0);
+        assert_eq!(di.insert_owned("baz".to_string()), 0);
+        assert_eq!(di.into_vec(), vec!["baz"]);
     }
 
     #[test]
