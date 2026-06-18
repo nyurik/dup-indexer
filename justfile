@@ -70,6 +70,7 @@ coverage: (_coverage '--open')
 _coverage *report_args: (cargo-install 'cargo-llvm-cov')
     cargo llvm-cov clean --workspace
     cargo llvm-cov --workspace --all-features --all-targets --no-report
+    cargo llvm-cov --workspace --no-default-features --all-targets --no-report
     cargo llvm-cov report --include-build-script {{report_args}}
 
 # Build and open code documentation
