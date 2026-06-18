@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0](https://github.com/nyurik/dup-indexer/compare/v0.4.5...v0.5.0) - 2026-06-18
+
+### Other
+
+- [**breaking**] use significantly faster foldhash by default ([#30](https://github.com/nyurik/dup-indexer/pull/30))
+
 ## [0.4.5](https://github.com/nyurik/dup-indexer/compare/v0.4.4...v0.4.5) - 2026-06-18
 
 ### Other
