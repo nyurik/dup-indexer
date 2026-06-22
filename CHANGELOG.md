@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1](https://github.com/nyurik/dup-indexer/compare/v0.5.0...v0.5.1) - 2026-06-22
+
+### Other
+
+- update .gitignore
+- format justfile
+- *(deps)* bump actions/checkout from 6 to 7 in the all-actions-version-updates group ([#33](https://github.com/nyurik/dup-indexer/pull/33))
+- fmt toml
+- pre-commit bump
+
 ## [0.5.0](https://github.com/nyurik/dup-indexer/compare/v0.4.5...v0.5.0) - 2026-06-18
 
 ### Other
