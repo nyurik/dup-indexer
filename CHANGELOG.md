@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2](https://github.com/nyurik/dup-indexer/compare/v0.5.1...v0.5.2) - 2026-11-17
+
+### Added
+
+- deprecate dup-indexer, which is no longer maintained ([#38](https://github.com/nyurik/dup-indexer/pull/38))
+
+### Other
+
+- Update README.md
+- codecov project status off; justfile update uses cargo-upgrade ([#37](https://github.com/nyurik/dup-indexer/pull/37))
+- [pre-commit.ci] pre-commit autoupdate ([#36](https://github.com/nyurik/dup-indexer/pull/36))
+- fix justfile cargo binstall
+- let rust fmt indent .rs files
+- disallow mem leaking in code
+
 ## [0.5.1](https://github.com/nyurik/dup-indexer/compare/v0.5.0...v0.5.1) - 2026-06-22
 
 ### Other
