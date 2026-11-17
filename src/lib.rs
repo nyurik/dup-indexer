@@ -1,4 +1,6 @@
 #![doc = include_str!("../README.md")]
+// The crate is deprecated, but its own code still uses its items.
+#![allow(deprecated)]
 
 #[cfg(feature = "foldhash")]
 pub use foldhash;

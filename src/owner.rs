@@ -22,6 +22,9 @@ use crate::DefaultHashBuilder;
 /// Implementing this trait is unsafe because the implementation must guarantee that
 /// the value can be copied by copying the bits of the value assuming that the value
 /// itself is valid and readonly. All Copy types are `PtrRead`, but `Box<T>` is not.
+#[deprecated(
+    note = "dup-indexer is no longer maintained. It was created for MVT encoding, and fast-mvt now uses a more efficient approach. For a general-purpose alternative, use indexmap::IndexSet. See https://github.com/nyurik/dup-indexer#readme"
+)]
 pub unsafe trait PtrRead {}
 
 macro_rules! impl_trait {
@@ -50,6 +53,9 @@ unsafe impl<T: PtrRead, V: PtrRead, S> PtrRead for HashMap<T, V, S> {}
 unsafe impl<T: PtrRead, V: PtrRead> PtrRead for BTreeMap<T, V> {}
 unsafe impl<T: PtrRead> PtrRead for BTreeSet<T> {}
 
+#[deprecated(
+    note = "dup-indexer is no longer maintained. It was created for MVT encoding, and fast-mvt now uses a more efficient approach. For a general-purpose alternative, use indexmap::IndexSet. See https://github.com/nyurik/dup-indexer#readme"
+)]
 pub struct DupIndexer<T, S = DefaultHashBuilder> {
     values: Vec<T>,
     lookup: HashMap<ManuallyDrop<T>, usize, S>,

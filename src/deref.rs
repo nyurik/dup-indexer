@@ -15,10 +15,16 @@ use crate::DefaultHashBuilder;
 /// # Safety
 /// Implementing this trait is unsafe because the implementation must guarantee that
 /// the [`Deref`] is stable per above.
+#[deprecated(
+    note = "dup-indexer is no longer maintained. It was created for MVT encoding, and fast-mvt now uses a more efficient approach. For a general-purpose alternative, use indexmap::IndexSet. See https://github.com/nyurik/dup-indexer#readme"
+)]
 pub unsafe trait StableDerefKey: Deref + Eq + Hash {}
 
 unsafe impl StableDerefKey for String {}
 
+#[deprecated(
+    note = "dup-indexer is no longer maintained. It was created for MVT encoding, and fast-mvt now uses a more efficient approach. For a general-purpose alternative, use indexmap::IndexSet. See https://github.com/nyurik/dup-indexer#readme"
+)]
 pub struct DupIndexerRefs<T: StableDerefKey, S = DefaultHashBuilder>
 where
     <T as Deref>::Target: 'static,
