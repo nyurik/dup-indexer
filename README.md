@@ -1,4 +1,4 @@
-# Dup-Indexer
+# dup-indexer
 
 > **⚠️ DEPRECATED: this crate is no longer maintained.**
 >
@@ -6,6 +6,8 @@
 > uses a more efficient approach: each layer's keys and values are stored once, as the encoded bytes written to the
 > tile, with no `unsafe` code. For a general-purpose list of unique values with index lookups, use
 > [`indexmap::IndexSet`](https://docs.rs/indexmap/latest/indexmap/set/struct.IndexSet.html).
+
+----
 
 [![GitHub repo](https://img.shields.io/badge/github-dup--indexer-8da0cb?logo=github)](https://github.com/nyurik/dup-indexer)
 [![crates.io version](https://img.shields.io/crates/v/dup-indexer)](https://crates.io/crates/dup-indexer)
