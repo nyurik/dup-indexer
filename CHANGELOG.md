@@ -9,9 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.5.2](https://github.com/nyurik/dup-indexer/compare/v0.5.1...v0.5.2) - 2026-11-17
 
-### Added
-
-- deprecate dup-indexer, which is no longer maintained ([#38](https://github.com/nyurik/dup-indexer/pull/38))
+> **⚠️ DEPRECATED: this crate is no longer maintained.**
+>
+> `dup-indexer` was created for encoding Mapbox Vector Tiles (MVT). [fast-mvt](https://github.com/nyurik/fast-mvt) now
+> uses a more efficient approach: each layer's keys and values are stored once, as the encoded bytes written to the
+> tile, with no `unsafe` code. For a general-purpose list of unique values with index lookups, use
+> [`indexmap::IndexSet`](https://docs.rs/indexmap/latest/indexmap/set/struct.IndexSet.html).
 
 ### Other
 
