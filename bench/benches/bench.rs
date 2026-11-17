@@ -24,6 +24,7 @@ impl DupIndexerRaw {
         }
     }
 
+    #[must_use]
     pub fn into_vec(self) -> Vec<i32> {
         self.values
     }
@@ -41,7 +42,7 @@ fn dup_indexer(c: &mut Criterion) {
                 }
             }
             black_box(di.into_vec())
-        })
+        });
     });
 
     group.bench_function("String", |b| {
@@ -53,7 +54,7 @@ fn dup_indexer(c: &mut Criterion) {
                 }
             }
             black_box(di.into_vec())
-        })
+        });
     });
 
     group.bench_function("i32", |b| {
@@ -65,7 +66,7 @@ fn dup_indexer(c: &mut Criterion) {
                 }
             }
             black_box(di.into_vec())
-        })
+        });
     });
 
     group.bench_function("u8", |b| {
@@ -77,7 +78,7 @@ fn dup_indexer(c: &mut Criterion) {
                 }
             }
             black_box(di.into_vec())
-        })
+        });
     });
 }
 
@@ -93,7 +94,7 @@ fn dup_gen_indexer(c: &mut Criterion) {
                 }
             }
             black_box(di.into_vec())
-        })
+        });
     });
 
     group.bench_function("str", |b| {
@@ -106,7 +107,7 @@ fn dup_gen_indexer(c: &mut Criterion) {
                 }
             }
             black_box(di.into_vec())
-        })
+        });
     });
 }
 
